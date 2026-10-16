@@ -1,0 +1,119 @@
+# Serenedipity
+
+A premium, night-first focus app: tell it how you feel and what's due, get a plan, and focus with music.
+"Serenedipity" is the current name; it lives in one constant, `APP_NAME` in `lib/config.ts`.
+
+- Product requirements: [`docs/PRD.md`](docs/PRD.md)
+- Design system: [`design/DESIGN_SYSTEM.md`](design/DESIGN_SYSTEM.md), tokens in [`design/tokens.json`](design/tokens.json),
+  reference screens in `design/Focus_App_Screens.pdf`
+- Phase 1 build brief: [`docs/BUILD_BRIEF.md`](docs/BUILD_BRIEF.md)
+
+## Stack
+
+Next.js 16 (App Router, Cache Components, TypeScript strict) · Tailwind CSS v4 · Supabase (`@supabase/ssr`) ·
+Radix primitives in the shadcn/ui pattern, restyled · Lucide · react-hook-form + zod · Vitest · Playwright · pnpm.
+Deploy target: Vercel.
+
+## Setup
+
+Requirements: Node 22+, pnpm 10+, Docker (for local Supabase).
+
+```bash
+pnpm install
+cp .env.example .env.local
+pnpm db:start            # starts local Supabase in Docker and applies supabase/migrations
+pnpm supabase status     # copy API URL, publishable key and secret key into .env.local
+pnpm dev                 # http://localhost:3000
+```
+
+Useful local URLs while Supabase runs: Studio http://127.0.0.1:54323, Mailpit (catches magic-link emails)
+http://127.0.0.1:54324.
+
+The design gallery lives at `/design` (development only; it returns 404 in production).
+
+## Scripts
+
+| Command | What it does |
+| --- | --- |
+| `pnpm dev` | Dev server |
+| `pnpm build` / `pnpm start` | Production build and server |
+| `pnpm lint` | ESLint |
+| `pnpm typecheck` | Generates route types, then `tsc --noEmit` |
+| `pnpm test` | Vitest unit tests |
+| `pnpm test:e2e` | Playwright smoke tests (builds and starts the app; needs local Supabase running) |
+| `pnpm format` | Prettier |
+| `pnpm db:start` / `db:stop` / `db:reset` | Local Supabase lifecycle; `db:reset` re-applies migrations |
+| `pnpm db:types` | Regenerates `lib/supabase/database.types.ts` from the local database |
+
+## Environment variables
+
+All variables are listed with comments in [`.env.example`](.env.example).
+
+| Variable | Where it's used | Required |
+| --- | --- | --- |
+| `NEXT_PUBLIC_SITE_URL` | Metadata, sitemap, canonical URLs | Yes |
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase client (browser + server) | Yes |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Supabase client (browser + server) | Yes |
+| `SUPABASE_SECRET_KEY` | E2E tests only (create test users and magic links). Never exposed to the app | Tests |
+| `RATE_LIMIT_SALT` | Hashes IP addresses for the waitlist rate limiter | Yes |
+| `NEXT_PUBLIC_ENABLE_GOOGLE_AUTH` | Shows "Continue with Google" unless `false` | No |
+| `NEXT_PUBLIC_ENABLE_APPLE_AUTH` | Shows "Continue with Apple" when `true` | No |
+| `SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID` / `_SECRET`, `SUPABASE_AUTH_EXTERNAL_APPLE_SECRET` | Local Supabase OAuth (read by `supabase/config.toml`) | No |
+
+## Routes
+
+| Route | What it is |
+| --- | --- |
+| `/` | Landing page with waitlist (static) |
+| `/privacy`, `/terms` | Placeholder legal pages |
+| `/login`, `/signup` | Shared sign-in screen: email magic link, Google, Apple (flagged) |
+| `/auth/callback` | Finishes OAuth (`?code=`) and magic links (`?token_hash=&type=email`) |
+| `/auth/check-email`, `/auth/error` | Post-submit and friendly error screens |
+| `/onboarding/[step]` | welcome, age, goals, rhythm, sound, guide, done; `/onboarding/not-available` for under 18 |
+| `/app` | Home dashboard (the Listen tab) |
+| `/app/listen`, `/app/check-in`, `/app/focus`, `/app/rooms` | Coming-soon placeholders with their glow moods |
+| `/app/settings` | Edit name and onboarding answers; plan and sign out |
+| `/design` | Dev-only design gallery |
+
+Routing rules live in `lib/auth/routing.ts` (unit-tested) and run in `proxy.ts` (Next 16's renamed middleware).
+Pages and server actions re-check the session themselves.
+
+## Production setup (Supabase)
+
+1. Create a Supabase project. Put its URL and publishable key in Vercel env vars (see table above).
+2. Apply migrations: `pnpm supabase link --project-ref <ref>` then `pnpm supabase db push`.
+3. **Authentication > URL Configuration**: Site URL = your domain; add `https://<domain>/auth/callback**` (and any
+   preview domains) to Redirect URLs.
+4. **Authentication > Email Templates**: paste `supabase/templates/magic_link.html` into both "Magic Link" and
+   "Confirm signup". The link points straight at `/auth/callback` with a token hash, so it works across devices.
+5. **Authentication > Providers > Google**: add the OAuth client ID and secret. In Google Cloud, the authorised
+   redirect URI is `https://<project-ref>.supabase.co/auth/v1/callback`.
+6. **Apple** (later): configure the provider in Supabase, then set `NEXT_PUBLIC_ENABLE_APPLE_AUTH=true`.
+7. Set up custom SMTP (e.g. Resend) before launch; Supabase's built-in mailer is rate limited.
+
+## Dev helpers
+
+`scripts/screenshot.mjs`, `scripts/app-shots.mjs`, `scripts/onboarding-shots.mjs` and
+`scripts/magic-link-probe.mjs` capture screens at given widths and exercise the real magic-link flow against
+local Supabase (Mailpit). They're for local review only.
+
+## Project structure
+
+```
+app/                 routes (marketing, auth, onboarding, app shell, /design)
+components/ui/       primitives: Button, GlassCard, Chip, Input, Eyebrow, and restyled Radix parts
+components/brand/    GlowBackground, SignatureOrb, ProgressRing, Logo
+components/*/        feature components (marketing, app, onboarding)
+lib/                 config, Supabase clients, validation schemas, seed data
+supabase/            config.toml, migrations, email templates
+tests/unit, tests/e2e
+```
+
+## Design tokens
+
+Tokens from `design/tokens.json` are CSS variables in `app/globals.css` (`@theme static`), so each one is a
+Tailwind utility (`bg-surface`, `text-ink-muted`, `border-line`, `rounded-lg`, …). Night is the default; Day is
+`data-theme="light"`. Gradient recipes are variables plus utilities (`bg-gradient-primary`, `bg-gradient-orb`,
+`bg-state-focus|calm|clear`, `glass`), and typography styles are `type-hero`, `type-h1`, `type-h2`, `type-h3`,
+`type-body`, `type-body-sm`, `type-eyebrow`, `type-timer`. A unit test fails if `globals.css` drifts from
+`tokens.json`. Components never use raw hex values.

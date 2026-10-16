@@ -1,0 +1,25 @@
+import { Clock, Headphones, MessageCircle, Settings, Users, type LucideIcon } from "lucide-react";
+
+export type NavItem = {
+  href: string;
+  label: string;
+  icon: LucideIcon;
+  /** Extra paths that should highlight this item. */
+  match?: string[];
+};
+
+/** Listen is the app's home (the Home screen in the design shows the Listen tab active). */
+export const PRIMARY_NAV: readonly NavItem[] = [
+  { href: "/app", label: "Listen", icon: Headphones, match: ["/app/listen"] },
+  { href: "/app/check-in", label: "Check in", icon: MessageCircle },
+  { href: "/app/focus", label: "Focus", icon: Clock },
+  { href: "/app/rooms", label: "Rooms", icon: Users },
+];
+
+export const SETTINGS_NAV: NavItem = { href: "/app/settings", label: "Settings", icon: Settings };
+
+export function isActive(item: NavItem, pathname: string) {
+  if (item.href === "/app")
+    return pathname === "/app" || (item.match ?? []).some((m) => pathname.startsWith(m));
+  return pathname === item.href || pathname.startsWith(`${item.href}/`);
+}

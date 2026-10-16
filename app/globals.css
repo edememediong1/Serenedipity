@@ -1,0 +1,312 @@
+@import "tailwindcss";
+
+/*
+ * Design tokens. Values mirror design/tokens.json exactly (a unit test checks this).
+ * Night is the default theme; Day is applied with [data-theme="light"].
+ * Every token is a CSS variable and a Tailwind theme value, so components never use raw hex.
+ */
+@theme static {
+  /* Colour: Night (default) */
+  --color-surface: #0b0d1a;
+  --color-surface-glass: rgba(255, 255, 255, 0.06);
+  --color-surface-deep: #131631;
+  --color-line: rgba(255, 255, 255, 0.12);
+  --color-ink: #f4f2ff;
+  --color-ink-muted: #b4b2cc;
+  --color-blue: #3f5ef5;
+  --color-violet: #7c4dff;
+  --color-orange: #ff8a4c;
+  --color-blue-soft: #9fb2ff;
+  --color-violet-glow: #3a2a6e;
+  --color-orange-glow: #5a2e2a;
+  --color-on-brand: #ffffff;
+  --color-critical: #ff6b6b;
+  --color-focus-ring: var(--color-blue-soft);
+  /* Track for progress rings (design system: rgba(255,255,255,0.10)) */
+  --color-track: rgba(255, 255, 255, 0.1);
+
+  /* Type families (next/font variables are set on <html>) */
+  --font-display: var(--font-instrument-serif), "Instrument Serif", Georgia, serif;
+  --font-sans: var(--font-plus-jakarta), "Plus Jakarta Sans", system-ui, sans-serif;
+
+  /* Spacing tokens: space-1..6 (Tailwind's 4px scale also lines up: 1, 2, 4, 6, 10, 16) */
+  --spacing-space-1: 4px;
+  --spacing-space-2: 8px;
+  --spacing-space-3: 16px;
+  --spacing-space-4: 24px;
+  --spacing-space-5: 40px;
+  --spacing-space-6: 64px;
+
+  /* Radius tokens */
+  --radius-sm: 10px;
+  --radius-md: 18px;
+  --radius-lg: 28px;
+  --radius-pill: 999px;
+
+  /* Motion */
+  --ease-calm: cubic-bezier(0.22, 1, 0.36, 1);
+  --animate-fade-in: fade-in 500ms var(--ease-calm) both;
+  --animate-rise-in: rise-in 600ms var(--ease-calm) both;
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  @keyframes rise-in {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    to {
+      opacity: 1;
+      /* none (not translateY(0)) so the element stops being a containing block for fixed children. */
+      transform: none;
+    }
+  }
+}
+
+/* Gradient recipes from DESIGN_SYSTEM.md, as variables. Use exactly. */
+:root {
+  --gradient-primary: linear-gradient(135deg, #3f5ef5, #7c4dff);
+  --shadow-primary: 0 10px 30px rgba(124, 77, 255, 0.4);
+  --gradient-orb: linear-gradient(135deg, #3f5ef5 0%, #7c4dff 60%, #ff8a4c 100%);
+  --gradient-ring-from: #7c4dff;
+  --gradient-ring-to: #ff8a4c;
+  --gradient-state-focus: linear-gradient(160deg, #3f5ef5, #5b3fd0);
+  --gradient-state-calm: linear-gradient(160deg, #2a3b8f, #3a2a6e);
+  --gradient-state-clear: linear-gradient(160deg, #7c4dff, #c2563a);
+
+  --glow-default:
+    radial-gradient(circle at 88% 6%, rgba(124, 77, 255, 0.6) 0, rgba(124, 77, 255, 0) 52%),
+    radial-gradient(circle at 6% 22%, rgba(63, 94, 245, 0.42) 0, rgba(63, 94, 245, 0) 46%),
+    radial-gradient(circle at 12% 104%, rgba(255, 138, 76, 0.38) 0, rgba(255, 138, 76, 0) 48%), #0b0d1a;
+  /* Mood variants move the orbs (see "Background glow" in the design system). */
+  --glow-focus:
+    radial-gradient(circle at 50% 38%, rgba(63, 94, 245, 0.55) 0, rgba(63, 94, 245, 0) 42%),
+    radial-gradient(circle at 92% 4%, rgba(124, 77, 255, 0.4) 0, rgba(124, 77, 255, 0) 44%),
+    radial-gradient(circle at 10% 104%, rgba(255, 138, 76, 0.26) 0, rgba(255, 138, 76, 0) 42%), #0b0d1a;
+  --glow-check-in:
+    radial-gradient(circle at 50% -4%, rgba(124, 77, 255, 0.7) 0, rgba(124, 77, 255, 0) 52%),
+    radial-gradient(circle at 4% 30%, rgba(63, 94, 245, 0.3) 0, rgba(63, 94, 245, 0) 40%),
+    radial-gradient(circle at 12% 104%, rgba(255, 138, 76, 0.3) 0, rgba(255, 138, 76, 0) 44%), #0b0d1a;
+  --glow-rooms:
+    radial-gradient(circle at 92% 4%, rgba(255, 138, 76, 0.4) 0, rgba(255, 138, 76, 0) 46%),
+    radial-gradient(circle at 4% 40%, rgba(124, 77, 255, 0.42) 0, rgba(124, 77, 255, 0) 48%),
+    radial-gradient(circle at 50% 110%, rgba(63, 94, 245, 0.3) 0, rgba(63, 94, 245, 0) 46%), #0b0d1a;
+
+  color-scheme: dark;
+}
+
+/* Day theme: settings, billing, legal, or by user choice. */
+[data-theme="light"] {
+  --color-surface: #f7f5fc;
+  --color-surface-glass: rgba(255, 255, 255, 0.72);
+  --color-surface-deep: #edeaf7;
+  --color-line: #e3e1ee;
+  --color-ink: #14152b;
+  --color-ink-muted: #5a5a74;
+  --color-blue: #3f5ef5;
+  --color-violet: #6e45e8;
+  --color-orange: #e0662a;
+  --color-blue-soft: #dce3ff;
+  --color-violet-glow: #e6deff;
+  --color-orange-glow: #ffe3d3;
+  --color-on-brand: #ffffff;
+  --color-critical: #c93838;
+  --color-track: rgba(20, 21, 43, 0.1);
+  /* On Day, blue-soft is too light for a focus ring; use blue for a visible 2px ring. */
+  --color-focus-ring: #3f5ef5;
+  color-scheme: light;
+}
+
+/* Typography styles from the design system. */
+@utility type-hero {
+  font-family: var(--font-display);
+  font-size: 52px;
+  line-height: 54px;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+}
+@utility type-hero-lg {
+  font-family: var(--font-display);
+  font-size: 72px;
+  line-height: 74px;
+  font-weight: 400;
+  letter-spacing: -0.015em;
+}
+@utility type-h1 {
+  font-family: var(--font-display);
+  font-size: 36px;
+  line-height: 40px;
+  font-weight: 400;
+}
+@utility type-h2 {
+  font-family: var(--font-sans);
+  font-size: 20px;
+  line-height: 26px;
+  font-weight: 600;
+}
+@utility type-h3 {
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 22px;
+  font-weight: 600;
+}
+@utility type-body {
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 22px;
+  font-weight: 400;
+}
+@utility type-body-sm {
+  font-family: var(--font-sans);
+  font-size: 13px;
+  line-height: 18px;
+  font-weight: 500;
+}
+@utility type-eyebrow {
+  font-family: var(--font-sans);
+  font-size: 11px;
+  line-height: 14px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+}
+@utility type-timer {
+  font-family: var(--font-sans);
+  font-size: 84px;
+  line-height: 84px;
+  font-weight: 200;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Glass card recipe. Falls back to surface-deep where backdrop blur is unsupported. */
+@utility glass {
+  background: var(--color-surface-deep);
+  border: 1px solid var(--color-line);
+  @supports ((backdrop-filter: blur(20px)) or (-webkit-backdrop-filter: blur(20px))) {
+    background: var(--color-surface-glass);
+    -webkit-backdrop-filter: blur(20px);
+    backdrop-filter: blur(20px);
+  }
+}
+
+@utility bg-gradient-primary {
+  background: var(--gradient-primary);
+  box-shadow: var(--shadow-primary);
+}
+@utility bg-gradient-orb {
+  background: var(--gradient-orb);
+}
+@utility bg-state-focus {
+  background: var(--gradient-state-focus);
+}
+@utility bg-state-calm {
+  background: var(--gradient-state-calm);
+}
+@utility bg-state-clear {
+  background: var(--gradient-state-clear);
+}
+
+/* Visible 2px focus ring on every interactive element. */
+@utility focus-ring {
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+  &:focus-visible {
+    outline-color: var(--color-focus-ring);
+  }
+}
+
+@layer base {
+  html {
+    background: var(--color-surface);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+  body {
+    @apply type-body;
+    /* No background here: the html element owns it so the fixed glow layer (z-index -1) shows. */
+    min-height: 100dvh;
+  }
+  :where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+    outline: 2px solid var(--color-focus-ring);
+    outline-offset: 2px;
+  }
+  ::selection {
+    background: rgba(124, 77, 255, 0.45);
+    color: var(--color-ink);
+  }
+  em {
+    font-style: italic;
+  }
+}
+
+/* Background glow: a fixed, clipped frame behind content. The inner layer is oversized so the
+   slow drift never reveals an edge, and the frame clips it so it never causes horizontal scroll. */
+.glow-frame {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+}
+.glow-layer {
+  position: absolute;
+  inset: -40px;
+  pointer-events: none;
+  background: var(--glow-default);
+  background-size: 100% 100%;
+}
+.glow-layer[data-mood="focus"] {
+  background: var(--glow-focus);
+}
+.glow-layer[data-mood="check-in"] {
+  background: var(--glow-check-in);
+}
+.glow-layer[data-mood="rooms"],
+.glow-layer[data-mood="finish"] {
+  background: var(--glow-rooms);
+}
+[data-theme="light"] .glow-layer {
+  background:
+    radial-gradient(circle at 88% 6%, var(--color-violet-glow) 0, transparent 52%),
+    radial-gradient(circle at 6% 22%, var(--color-blue-soft) 0, transparent 46%),
+    radial-gradient(circle at 12% 104%, var(--color-orange-glow) 0, transparent 48%), var(--color-surface);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .glow-layer[data-drift="true"] {
+    animation: glow-drift 32s ease-in-out infinite alternate;
+  }
+}
+@keyframes glow-drift {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(-12px, 8px, 0);
+  }
+  100% {
+    transform: translate3d(10px, -6px, 0);
+  }
+}
+
+/* Reduced motion: glows stay still, transitions become plain fades. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+  }
+  .animate-rise-in {
+    animation-name: fade-in !important;
+    animation-duration: 300ms !important;
+  }
+}

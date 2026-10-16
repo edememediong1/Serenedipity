@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+  <body
+    style="
+      margin: 0;
+      padding: 0;
+      background: #0b0d1a;
+      font-family:
+        &quot;Plus Jakarta Sans&quot;,
+        system-ui,
+        -apple-system,
+        Segoe UI,
+        sans-serif;
+      color: #f4f2ff;
+    "
+  >
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background: #0b0d1a">
+      <tr>
+        <td align="center" style="padding: 48px 24px">
+          <table
+            role="presentation"
+            width="100%"
+            cellpadding="0"
+            cellspacing="0"
+            style="
+              max-width: 480px;
+              background: #131631;
+              border: 1px solid rgba(255, 255, 255, 0.12);
+              border-radius: 28px;
+            "
+          >
+            <tr>
+              <td style="padding: 40px 32px">
+                <div
+                  style="
+                    width: 40px;
+                    height: 40px;
+                    border-radius: 999px;
+                    background: #7c4dff;
+                    background-image: linear-gradient(135deg, #3f5ef5 0%, #7c4dff 60%, #ff8a4c 100%);
+                  "
+                ></div>
+                <h1
+                  style="
+                    margin: 24px 0 8px;
+                    font-family: &quot;Instrument Serif&quot;, Georgia, serif;
+                    font-weight: 400;
+                    font-size: 36px;
+                    line-height: 40px;
+                    color: #f4f2ff;
+                  "
+                >
+                  Your sign-in link
+                </h1>
+                <p style="margin: 0 0 28px; font-size: 15px; line-height: 22px; color: #b4b2cc">
+                  Tap the button to open your space. The link works once and expires in an hour.
+                </p>
+                <a
+                  href="{{ .RedirectTo }}&token_hash={{ .TokenHash }}&type=email"
+                  style="
+                    display: inline-block;
+                    padding: 16px 28px;
+                    border-radius: 18px;
+                    background: #5b55fa;
+                    background-image: linear-gradient(135deg, #3f5ef5, #7c4dff);
+                    color: #ffffff;
+                    font-weight: 600;
+                    font-size: 15px;
+                    text-decoration: none;
+                  "
+                  >Sign in</a
+                >
+                <p style="margin: 28px 0 0; font-size: 13px; line-height: 18px; color: #b4b2cc">
+                  Didn't ask for this? You can ignore this email.
+                </p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>
