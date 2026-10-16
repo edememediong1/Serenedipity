@@ -154,3 +154,74 @@ export async function isBlocked(blocker: string, blocked: string) {
     .maybeSingle();
   return !!data;
 }
+
+/** Completed 25-minute focus blocks on the given days (0 = today, UTC noon). */
+export async function seedBlocks(userId: string, daysAgo: number[]) {
+  const rows = daysAgo.map((n) => {
+    const d = new Date();
+    d.setUTCDate(d.getUTCDate() - n);
+    d.setUTCHours(n === 0 ? Math.min(new Date().getUTCHours(), 12) : 12, 0, 0, 0);
+    return {
+      user_id: userId,
+      planned_minutes: 25,
+      started_at: d.toISOString(),
+      ended_at: d.toISOString(),
+      focused_seconds: 1500,
+      completed: true,
+      outcome: "done",
+    };
+  });
+  const { error } = await admin().from("focus_blocks").insert(rows);
+  if (error) throw error;
+}
+
+/**
+ * A Supabase client signed in as this user with the public key, for checking what row-level
+ * security lets a real user read or write directly.
+ */
+export async function userClient(userId: string) {
+  const password = `pw-${crypto.randomUUID()}`;
+  const { data: u, error } = await admin().auth.admin.updateUserById(userId, { password });
+  if (error) throw error;
+  const client = createClient<Database>(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
+    {
+      auth: { persistSession: false, autoRefreshToken: false },
+    },
+  );
+  const { error: signInError } = await client.auth.signInWithPassword({ email: u.user.email!, password });
+  if (signInError) throw signInError;
+  return client;
+}
+
+export async function groupBySlug(slug: string) {
+  const { data } = await admin().from("groups").select("id, invite_code, status").eq("slug", slug).single();
+  return data!;
+}
+
+export async function memberStatus(groupId: string, userId: string) {
+  const { data } = await admin()
+    .from("group_members")
+    .select("role, status")
+    .eq("group_id", groupId)
+    .eq("user_id", userId)
+    .maybeSingle();
+  return data;
+}
+
+/** Backdates a membership so link-posting (blocked for a member's first day) is allowed. */
+export async function backdateMembership(groupId: string, userId: string) {
+  await admin()
+    .from("group_members")
+    .update({ joined_at: new Date(Date.now() - 2 * 86400_000).toISOString() })
+    .eq("group_id", groupId)
+    .eq("user_id", userId);
+}
+
+/** The first finished block of the day opens the streak celebration; close it to carry on. */
+export async function dismissCelebration(page: Page) {
+  const dialog = page.getByRole("dialog", { name: /streak|Day one/ });
+  await dialog.getByRole("button", { name: "Keep going" }).click();
+  await dialog.waitFor({ state: "hidden" });
+}

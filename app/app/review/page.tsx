@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Check, ChevronLeft, ChevronRight, Flame, X } from "lucide-react";
 import { Suspense } from "react";
+import { ActivitySection } from "@/components/streaks/activity-section";
 import { GlowBackground } from "@/components/brand/glow-background";
 import { ProgressRing } from "@/components/brand/progress-ring";
 import { ReflectionPanel } from "@/components/review/reflection-panel";
@@ -389,6 +390,9 @@ export default function ReviewPage({ searchParams }: PageProps<"/app/review">) {
           }
         >
           <ReviewContent searchParams={searchParams} />
+        </Suspense>
+        <Suspense fallback={<div className="h-64 rounded-lg bg-surface-deep/60" aria-hidden="true" />}>
+          <ActivitySection />
         </Suspense>
       </div>
     </>

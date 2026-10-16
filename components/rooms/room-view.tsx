@@ -46,6 +46,7 @@ import { describeSchedule, roomPhase, trackPosition } from "@/lib/rooms/schedule
 import { formatClock } from "@/lib/timer/engine";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
+import { announceStreak } from "@/components/streaks/events";
 import { ReportSheet } from "./report-sheet";
 import { useRoomMedia } from "./use-room-media";
 import { useServerNow } from "./use-server-clock";
@@ -201,6 +202,7 @@ export function RoomView({
     const beat = window.setInterval(async () => {
       const res = await roomHeartbeat(room.id);
       if (res.removed) setStage("removed");
+      else if (res.streak) announceStreak(res.streak);
     }, 60_000);
 
     return () => {

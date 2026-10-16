@@ -52,7 +52,7 @@ export async function archiveRoom(roomId: string): Promise<AdminResult> {
 
 const Resolve = z.object({
   reportId: z.uuid(),
-  action: z.enum(["dismiss", "remove"]),
+  action: z.enum(["dismiss", "remove", "remove_content"]),
 });
 
 /**
@@ -66,7 +66,7 @@ export async function resolveReport(input: z.input<typeof Resolve>): Promise<Adm
   const db = createAdminClient();
   const { data: report } = await db
     .from("reports")
-    .select("id, reported_user_id, room_id")
+    .select("id, reported_user_id, room_id, post_id, comment_id")
     .eq("id", parsed.data.reportId)
     .maybeSingle();
   if (!report) return { ok: false, message: "Report not found." };
@@ -81,13 +81,53 @@ export async function resolveReport(input: z.input<typeof Resolve>): Promise<Adm
       return { ok: false, message: "Couldn't remove them." };
     }
   }
+  if (parsed.data.action === "remove_content") {
+    if (!report.post_id && !report.comment_id)
+      return { ok: false, message: "There's no post or comment on this report." };
+    if (report.post_id) await db.from("group_posts").update({ status: "removed" }).eq("id", report.post_id);
+    if (report.comment_id)
+      await db.from("group_comments").update({ status: "removed" }).eq("id", report.comment_id);
+  }
   await db
     .from("reports")
-    .update({ status: parsed.data.action === "remove" ? "actioned" : "dismissed" })
+    .update({ status: parsed.data.action === "dismiss" ? "dismissed" : "actioned" })
     .eq("id", report.id);
   revalidatePath("/admin/reports");
   return {
     ok: true,
-    message: parsed.data.action === "remove" ? "Removed from the room. Report closed." : "Report dismissed.",
+    message:
+      parsed.data.action === "remove"
+        ? "Removed from the room. Report closed."
+        : parsed.data.action === "remove_content"
+          ? "Content removed. Report closed."
+          : "Report dismissed.",
+  };
+}
+
+const GroupStatus = z.object({ groupId: z.uuid(), status: z.enum(["active", "frozen", "deleted"]) });
+
+/** Pause (read-only), restore or delete a group. Deleting also closes its rooms. */
+export async function setGroupStatus(input: z.input<typeof GroupStatus>): Promise<AdminResult> {
+  await requireAdmin();
+  const parsed = GroupStatus.safeParse(input);
+  if (!parsed.success) return { ok: false, message: "Unknown group." };
+  const db = createAdminClient();
+  const { error } = await db
+    .from("groups")
+    .update({ status: parsed.data.status })
+    .eq("id", parsed.data.groupId);
+  if (error) return { ok: false, message: "Couldn't update the group." };
+  if (parsed.data.status === "deleted")
+    await db.from("rooms").update({ status: "archived" }).eq("group_id", parsed.data.groupId);
+  revalidatePath("/admin/groups");
+  revalidatePath("/app/groups");
+  return {
+    ok: true,
+    message:
+      parsed.data.status === "frozen"
+        ? "Group paused."
+        : parsed.data.status === "deleted"
+          ? "Group deleted."
+          : "Group restored.",
   };
 }

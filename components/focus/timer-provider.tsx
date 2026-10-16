@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, use, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { announceStreak } from "@/components/streaks/events";
 import { finishFocusBlock, saveFocusPreferences, skipTask, startFocusBlock } from "@/app/app/focus/actions";
 import {
   advance,
@@ -212,12 +213,13 @@ export function TimerProvider({ children }: { children: ReactNode }) {
       pendingStart.current = null;
       const id = blockId ?? (pending ? await pending : null);
       if (!id) return;
-      await finishFocusBlock({
+      const res = await finishFocusBlock({
         id,
         focusedSeconds: Math.round(focusedMs / 1000),
         outcome,
         completed,
       });
+      if ("streak" in res && res.streak) announceStreak(res.streak);
     },
     [],
   );

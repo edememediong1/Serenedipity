@@ -11,6 +11,9 @@ import { Eyebrow } from "@/components/ui/eyebrow";
 import { getSessionProfile } from "@/lib/auth/session";
 import { getTodayStats } from "@/lib/focus/stats";
 import { greeting } from "@/lib/greeting";
+import { getStreak } from "@/lib/streaks/data";
+import { hourIn } from "@/lib/review/stats";
+import { StreakCard } from "@/components/streaks/streak-card";
 import { listPlaylists } from "@/lib/music/data";
 import { GAMES } from "@/components/games/catalog";
 
@@ -21,6 +24,12 @@ async function MobileGreeting() {
   return (
     <Eyebrow className="lg:hidden">{greeting(new Date(), profile.timezone, profile.display_name)}</Eyebrow>
   );
+}
+
+async function Streak() {
+  const [streak, { profile }] = await Promise.all([getStreak(), getSessionProfile()]);
+  const evening = hourIn(new Date().toISOString(), profile.timezone) >= 18;
+  return <StreakCard streak={streak} evening={evening} />;
 }
 
 async function Picked() {
@@ -48,6 +57,12 @@ export default function HomePage() {
             Find your <em>focus</em>
           </h1>
         </header>
+
+        <div className="lg:col-span-2">
+          <Suspense fallback={<div className="h-32 rounded-lg bg-surface-deep/60" aria-hidden="true" />}>
+            <Streak />
+          </Suspense>
+        </div>
 
         <div className="empty:hidden lg:col-span-2">
           <Suspense fallback={null}>

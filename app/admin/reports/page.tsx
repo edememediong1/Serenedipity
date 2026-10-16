@@ -69,8 +69,18 @@ async function Reports({ searchParams }: { searchParams: PageProps<"/admin/repor
                   </dd>
                   <dt className="text-ink-muted">By</dt>
                   <dd>{name(r.reporter)}</dd>
-                  <dt className="text-ink-muted">Room</dt>
-                  <dd>{r.room?.title ?? "Room closed"}</dd>
+                  <dt className="text-ink-muted">Where</dt>
+                  <dd>
+                    {r.group
+                      ? `Group: ${r.group.name}${r.post_id ? " (post)" : r.comment_id ? " (comment)" : ""}`
+                      : (r.room?.title ?? "Room closed")}
+                  </dd>
+                  {r.content ? (
+                    <>
+                      <dt className="text-ink-muted">Content</dt>
+                      <dd className="whitespace-pre-wrap">{r.content}</dd>
+                    </>
+                  ) : null}
                   {r.details ? (
                     <>
                       <dt className="text-ink-muted">Details</dt>
@@ -80,12 +90,25 @@ async function Reports({ searchParams }: { searchParams: PageProps<"/admin/repor
                   {status === "closed" ? (
                     <>
                       <dt className="text-ink-muted">Outcome</dt>
-                      <dd>{r.status === "actioned" ? "Removed from the room" : "Dismissed"}</dd>
+                      <dd>
+                        {r.status === "actioned"
+                          ? r.group
+                            ? "Action taken"
+                            : "Removed from the room"
+                          : "Dismissed"}
+                      </dd>
                     </>
                   ) : null}
                 </dl>
                 {status === "open" ? (
                   <div className="flex flex-wrap gap-2">
+                    {r.post_id || r.comment_id ? (
+                      <AdminActionButton
+                        run={resolveReport.bind(null, { reportId: r.id, action: "remove_content" })}
+                        label={`Remove ${r.post_id ? "post" : "comment"}`}
+                        variant="primary"
+                      />
+                    ) : null}
                     {r.room_id ? (
                       <AdminActionButton
                         run={resolveReport.bind(null, { reportId: r.id, action: "remove" })}

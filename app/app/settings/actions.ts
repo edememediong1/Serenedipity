@@ -44,3 +44,16 @@ export async function deleteCheckInHistory(): Promise<SettingsResult> {
   }
   return { ok: true, message: "Your check-in history is deleted." };
 }
+
+/** Rest days per week for streaks: 2 (gentle, default), 1, or 0 (strict). */
+export async function updateStreakRestDays(value: number): Promise<SettingsResult> {
+  if (![0, 1, 2].includes(value)) return { ok: false, message: "Choose 0, 1 or 2 rest days." };
+  const { user, supabase } = await getSessionProfile();
+  const { error } = await supabase.from("profiles").update({ streak_rest_days: value }).eq("id", user.id);
+  if (error) {
+    console.error("[settings] streak rest days failed", error);
+    return { ok: false, message: "We couldn't save that just now. Please try again." };
+  }
+  revalidatePath("/app", "layout");
+  return { ok: true, message: "Saved." };
+}

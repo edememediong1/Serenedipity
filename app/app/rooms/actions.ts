@@ -16,6 +16,8 @@ import { liveCounts } from "@/lib/rooms/data";
 import { roomPhase } from "@/lib/rooms/schedule";
 import { MessageInput, ReportInput, RoomInput, type RoomInputValue } from "@/lib/rooms/validation";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { streakEventAfterActivity } from "@/lib/streaks/data";
+import { ROOM_SESSION_MIN_SECONDS, type StreakEvent } from "@/lib/streaks/engine";
 
 /*
  * Room writes. Each action authorises the caller (session, plan, membership, room phase) and only
@@ -31,11 +33,52 @@ async function loadRoom(roomId: string) {
   const { data } = await createAdminClient()
     .from("rooms")
     .select(
-      "id, visibility, invite_code, host_id, capacity, status, schedule, starts_at, session_minutes, focus_minutes, break_minutes",
+      "id, visibility, invite_code, host_id, group_id, capacity, status, schedule, starts_at, session_minutes, focus_minutes, break_minutes",
     )
     .eq("id", roomId)
     .maybeSingle();
   return data && data.status === "active" ? data : null;
+}
+
+/**
+ * Records presence in the room's current scheduled session (for streaks and the activity grid).
+ * Returns how long this person has been in the session before and after this check-in.
+ */
+async function recordAttendance(
+  room: NonNullable<Awaited<ReturnType<typeof loadRoom>>>,
+  userId: string,
+): Promise<{ before: number; after: number } | null> {
+  const now = Date.now();
+  const phase = roomPhase(room, now);
+  if (!phase.live) return null;
+  const db = createAdminClient();
+  const sessionStart = new Date(phase.sessionStart).toISOString();
+  const { data: row } = await db
+    .from("room_attendance")
+    .select("joined_at, last_seen_at")
+    .eq("room_id", room.id)
+    .eq("user_id", userId)
+    .eq("session_start", sessionStart)
+    .maybeSingle();
+  const nowIso = new Date(now).toISOString();
+  if (!row) {
+    await db.from("room_attendance").insert({
+      room_id: room.id,
+      user_id: userId,
+      session_start: sessionStart,
+      joined_at: nowIso,
+      last_seen_at: nowIso,
+    });
+    return { before: 0, after: 0 };
+  }
+  await db
+    .from("room_attendance")
+    .update({ last_seen_at: nowIso })
+    .eq("room_id", room.id)
+    .eq("user_id", userId)
+    .eq("session_start", sessionStart);
+  const joined = Date.parse(row.joined_at);
+  return { before: (Date.parse(row.last_seen_at) - joined) / 1000, after: (now - joined) / 1000 };
 }
 
 export async function joinRoom(roomId: string, code?: string): Promise<RoomResult> {
@@ -46,12 +89,26 @@ export async function joinRoom(roomId: string, code?: string): Promise<RoomResul
   if (!room) return { ok: false, message: "That room has closed." };
 
   const db = createAdminClient();
-  const { data: rows } = await db.from("room_participants").select("room_id, removed").eq("user_id", user.id);
+  const { data: rows } = await db
+    .from("room_participants")
+    .select("room_id, removed, room:rooms(group_id)")
+    .eq("user_id", user.id);
   const mine = (rows ?? []).find((r) => r.room_id === roomId);
   const isHost = room.host_id === user.id;
 
   if (room.visibility === "private" && !isHost && !mine && !admin && code !== room.invite_code)
     return { ok: false, message: "This is a private room. Ask the host for the invite link." };
+
+  if (room.group_id && !admin) {
+    const { data: membership } = await db
+      .from("group_members")
+      .select("status")
+      .eq("group_id", room.group_id)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (membership?.status !== "active")
+      return { ok: false, message: "This room is for members of its group." };
+  }
 
   const counts = await liveCounts([roomId]);
   const denial = joinDenial({
@@ -60,10 +117,15 @@ export async function joinRoom(roomId: string, code?: string): Promise<RoomResul
     admin,
     removed: !!mine?.removed,
     alreadyMember: !!mine,
-    otherRoomsJoined: (rows ?? []).filter((r) => r.room_id !== roomId).length,
+    // Group rooms don't use up the free trial room.
+    otherRoomsJoined: (rows ?? []).filter((r) => {
+      const other = Array.isArray(r.room) ? r.room[0] : r.room;
+      return r.room_id !== roomId && !other?.group_id;
+    }).length,
     liveCount: counts.get(roomId) ?? 0,
     capacity: room.capacity,
     isHost,
+    groupRoom: !!room.group_id,
   });
   if (denial) return { ok: false, message: DENIAL_MESSAGES[denial] };
 
@@ -75,14 +137,15 @@ export async function joinRoom(roomId: string, code?: string): Promise<RoomResul
     console.error("[rooms] join failed", error);
     return { ok: false, message: "Couldn't join the room. Try again." };
   }
+  await recordAttendance(room, user.id);
   revalidatePath("/app/rooms");
   return { ok: true };
 }
 
 /** Called every minute while the room is open, so headcounts and capacity stay honest. */
-export async function roomHeartbeat(roomId: string): Promise<{ removed: boolean }> {
-  if (!Id.safeParse(roomId).success) return { removed: false };
-  const { user } = await getSessionProfile();
+export async function roomHeartbeat(roomId: string): Promise<{ removed: boolean; streak: StreakEvent }> {
+  if (!Id.safeParse(roomId).success) return { removed: false, streak: null };
+  const { user, profile } = await getSessionProfile();
   const db = createAdminClient();
   const { data } = await db
     .from("room_participants")
@@ -91,7 +154,16 @@ export async function roomHeartbeat(roomId: string): Promise<{ removed: boolean 
     .eq("user_id", user.id)
     .eq("removed", false)
     .select("room_id");
-  return { removed: !data?.length };
+  if (!data?.length) return { removed: true, streak: null };
+
+  const room = await loadRoom(roomId);
+  const stay = room ? await recordAttendance(room, user.id) : null;
+  // Crossing ten minutes makes this a counted room session, which may extend today's streak.
+  const crossed = !!stay && stay.before < ROOM_SESSION_MIN_SECONDS && stay.after >= ROOM_SESSION_MIN_SECONDS;
+  const streak = crossed
+    ? await streakEventAfterActivity(db, user.id, profile.timezone, profile.streak_rest_days)
+    : null;
+  return { removed: false, streak };
 }
 
 export async function leaveRoom(roomId: string): Promise<RoomResult> {

@@ -1,6 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
-import { completeOnboarding, signInAs } from "./helpers";
+import { completeOnboarding, signInAs, dismissCelebration } from "./helpers";
 
 test.describe("focus timer", () => {
   test.beforeEach(async ({ page }) => {
@@ -34,6 +34,7 @@ test.describe("focus timer", () => {
     await page.clock.fastForward(24 * 60_000 + 1000);
     await expect(main.getByText("Block finished. How did it go?")).toBeVisible();
     await main.getByRole("button", { name: "Done" }).first().click();
+    await dismissCelebration(page);
     await expect(main.getByText("1 lap done. Nice work.")).toBeVisible();
     await expect(main.getByRole("heading", { level: 1 })).toContainText("Breathe, stretch, look away");
 

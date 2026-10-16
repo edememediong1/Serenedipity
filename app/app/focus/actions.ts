@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { getSessionProfile } from "@/lib/auth/session";
+import { streakEventAfterActivity } from "@/lib/streaks/data";
 import { askLunaWhenStuck, LunaUnavailableError } from "@/lib/luna/client";
 import { screenMessage } from "@/lib/luna/safety";
 import type { StuckTurn } from "@/lib/luna/schema";
@@ -54,7 +55,7 @@ const FinishSchema = z.object({
 export async function finishFocusBlock(input: z.input<typeof FinishSchema>) {
   const parsed = FinishSchema.safeParse(input);
   if (!parsed.success) return { error: "Invalid block." };
-  const { supabase } = await getSessionProfile();
+  const { user, profile, supabase } = await getSessionProfile();
   const { data: block, error } = await supabase
     .from("focus_blocks")
     .update({
@@ -88,8 +89,12 @@ export async function finishFocusBlock(input: z.input<typeof FinishSchema>) {
         await supabase.from("plans").update({ status: "completed" }).eq("id", task.plan_id);
     }
   }
+  // A finished block may be today's first activity: tell the client so it can celebrate the streak.
+  const streak = parsed.data.completed
+    ? await streakEventAfterActivity(supabase, user.id, profile.timezone, profile.streak_rest_days)
+    : null;
   revalidatePath("/app");
-  return { ok: true as const };
+  return { ok: true as const, streak };
 }
 
 export type StuckResult = { ok: true; turn: StuckTurn } | { ok: false; support: boolean; message: string };

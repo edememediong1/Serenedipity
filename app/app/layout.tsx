@@ -7,6 +7,7 @@ import { SidebarNav, TabBar } from "@/components/app/nav-link";
 import { PlayerProvider } from "@/components/app/player-context";
 import { GreetingSlot, PlanBadgeSlot, UserMenuSlot } from "@/components/app/session-slots";
 import { UserMenuFallback } from "@/components/app/user-menu";
+import { StreakCelebration } from "@/components/streaks/celebration";
 import { TimerBanner } from "@/components/focus/timer-banner";
 import { TimerProvider } from "@/components/focus/timer-provider";
 
@@ -105,6 +106,7 @@ export default function AppLayout({ children }: LayoutProps<"/app">) {
           </HideInRoom>
           <TabBar />
         </div>
+        <StreakCelebration />
       </TimerProvider>
     </PlayerProvider>
   );

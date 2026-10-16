@@ -19,6 +19,8 @@ export type JoinCheck = {
   liveCount: number;
   capacity: number;
   isHost: boolean;
+  /** Group rooms are part of the group: members join them freely, without using the trial room. */
+  groupRoom?: boolean;
 };
 
 export type JoinDenied = "age" | "removed" | "trial_used" | "full";
@@ -26,7 +28,7 @@ export type JoinDenied = "age" | "removed" | "trial_used" | "full";
 export function joinDenial(c: JoinCheck): JoinDenied | null {
   if (!c.ageConfirmed) return "age";
   if (c.removed) return "removed";
-  const unlimited = c.admin || c.plan === "premium" || c.isHost;
+  const unlimited = c.admin || c.plan === "premium" || c.isHost || !!c.groupRoom;
   if (!unlimited && !c.alreadyMember && c.otherRoomsJoined >= FREE_TRIAL_ROOMS) return "trial_used";
   if (!c.admin && !c.isHost && c.liveCount >= c.capacity) return "full";
   return null;
