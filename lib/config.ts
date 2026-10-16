@@ -4,6 +4,9 @@
  */
 export const APP_NAME = "Serenedipity";
 
+/** The AI focus guide's name. Always shown with what Luna is ("your focus guide", "an AI"). */
+export const GUIDE_NAME = "Luna";
+
 export const APP_TAGLINE = "Clear head. Deep work.";
 
 /** The PRD one-liner, used as the hero subhead and default meta description. */

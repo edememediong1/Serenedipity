@@ -55,6 +55,9 @@ All variables are listed with comments in [`.env.example`](.env.example).
 | `NEXT_PUBLIC_SUPABASE_URL` | Supabase client (browser + server) | Yes |
 | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Supabase client (browser + server) | Yes |
 | `SUPABASE_SECRET_KEY` | E2E tests only (create test users and magic links). Never exposed to the app | Tests |
+| `ANTHROPIC_API_KEY` | Luna's check-ins and plans (Claude, server-only) | For Luna |
+| `DEEPGRAM_API_KEY` / `DEEPGRAM_MODEL` | Voice-note transcription (server-only); without it check-ins are typed | For voice |
+| `LUNA_MOCK` | `true` = canned Luna replies for local dev and e2e. Never set in production | No |
 | `RATE_LIMIT_SALT` | Hashes IP addresses for the waitlist rate limiter | Yes |
 | `NEXT_PUBLIC_ENABLE_GOOGLE_AUTH` | Shows "Continue with Google" unless `false` | No |
 | `NEXT_PUBLIC_ENABLE_APPLE_AUTH` | Shows "Continue with Apple" when `true` | No |
@@ -77,6 +80,21 @@ All variables are listed with comments in [`.env.example`](.env.example).
 
 Routing rules live in `lib/auth/routing.ts` (unit-tested) and run in `proxy.ts` (Next 16's renamed middleware).
 Pages and server actions re-check the session themselves.
+
+## Luna and the focus timer
+
+- **Luna** (`GUIDE_NAME` in `lib/config.ts`) is the AI focus guide. `/app/check-in` takes a voice note
+  (transcribed by Deepgram via `POST /api/luna/transcribe`; audio is never stored) or text, then Claude
+  (`claude-opus-5-5`, structured outputs, server-side fallbacks) asks up to 3 clarifying questions and returns an
+  editable plan. Code: `lib/luna/` (prompt, schema, client, safety), `app/app/check-in/actions.ts`.
+- **Safety first**: every message passes a keyword screen before the model; matches, or a model "crisis"
+  assessment, skip planning and show 988 and other resources. Flags go to `safety_events` (category only, never
+  the conversation). The PRD requires testing this flow with many sample messages and a legal review of all AI copy
+  before any public release.
+- **Free plan**: one check-in per day (premium unlimited), enforced in the server action.
+- **Focus timer** (`/app/focus`): timestamp-based engine in `lib/timer/engine.ts` (accurate in background tabs),
+  long break every 4 blocks, chime, Done / Need more time / Stuck between blocks, "I'm stuck" asks Luna for a
+  smaller step. Blocks are saved to `focus_blocks` and feed the dashboard's Today card.
 
 ## Production setup (Supabase)
 

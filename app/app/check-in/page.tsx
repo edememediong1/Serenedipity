@@ -1,27 +1,33 @@
 import type { Metadata } from "next";
-import { MessageCircle } from "lucide-react";
-import { ComingSoon } from "@/components/app/coming-soon";
+import { Suspense } from "react";
+import { CheckInExperience } from "@/components/luna/check-in-experience";
+import { GlowBackground } from "@/components/brand/glow-background";
+import { getSessionProfile } from "@/lib/auth/session";
+import { GUIDE_NAME } from "@/lib/config";
 
-export const metadata: Metadata = { title: "Check in" };
+export const metadata: Metadata = { title: `Check in with ${GUIDE_NAME}` };
 
-// TODO(check-in): voice or text check-in with the focus guide (PRD 4.4), including the safety and support flow (PRD 5).
-export default function CheckInPage() {
+async function CheckInLoader({ searchParams }: { searchParams: PageProps<"/app/check-in">["searchParams"] }) {
+  const params = await searchParams;
+  const { profile } = await getSessionProfile();
+  const mood = typeof params.mood === "string" ? params.mood : null;
+  return <CheckInExperience mood={mood} breakMinutes={profile.default_break_minutes} />;
+}
+
+export default function CheckInPage({ searchParams }: PageProps<"/app/check-in">) {
   return (
-    <ComingSoon
-      mood="check-in"
-      eyebrow="Clarity check-in"
-      title={
-        <>
-          Say how you <em>feel</em>
-        </>
-      }
-      description="Tell your focus guide how you're doing and what's due. It turns that into a plan you can start on."
-      icon={MessageCircle}
-      upcoming={[
-        "Talk or type for about 20 seconds",
-        "A short reset when you need one",
-        "Small tasks that fit before your deadline, ready to edit",
-      ]}
-    />
+    <>
+      <GlowBackground mood="check-in" />
+      <Suspense
+        fallback={
+          <div role="status" aria-label="Loading check-in" className="mx-auto flex max-w-2xl flex-col gap-4">
+            <div className="h-4 w-32 rounded-sm bg-surface-deep" />
+            <div className="h-20 w-3/4 rounded-md bg-surface-deep" />
+          </div>
+        }
+      >
+        <CheckInLoader searchParams={searchParams} />
+      </Suspense>
+    </>
   );
 }

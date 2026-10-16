@@ -33,3 +33,14 @@ export async function updatePreferences(input: unknown): Promise<SettingsResult>
   revalidatePath("/app", "layout");
   return { ok: true, message: "Saved. Your space is up to date." };
 }
+
+/** Deletes every check-in (transcripts and mood notes). Plans and focus history are kept. PRD section 5. */
+export async function deleteCheckInHistory(): Promise<SettingsResult> {
+  const { user, supabase } = await getSessionProfile();
+  const { error } = await supabase.from("checkins").delete().eq("user_id", user.id);
+  if (error) {
+    console.error("[settings] delete check-ins failed", error);
+    return { ok: false, message: "We couldn't delete your check-ins just now. Please try again." };
+  }
+  return { ok: true, message: "Your check-in history is deleted." };
+}

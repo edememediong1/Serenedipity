@@ -23,6 +23,124 @@ export type Database = {
   };
   public: {
     Tables: {
+      checkins: {
+        Row: {
+          created_at: string;
+          id: string;
+          input_mode: string;
+          mood_summary: string | null;
+          safety_flag: boolean;
+          transcript: string | null;
+          user_id: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          created_at?: string;
+          id?: string;
+          input_mode?: string;
+          mood_summary?: string | null;
+          safety_flag?: boolean;
+          transcript?: string | null;
+          user_id: string;
+        };
+        Update: {
+          created_at?: string;
+          id?: string;
+          input_mode?: string;
+          mood_summary?: string | null;
+          safety_flag?: boolean;
+          transcript?: string | null;
+          user_id?: string;
+        };
+        Relationships: [];
+      };
+      focus_blocks: {
+        Row: {
+          completed: boolean;
+          created_at: string;
+          ended_at: string | null;
+          focused_seconds: number;
+          id: string;
+          outcome: string | null;
+          planned_minutes: number;
+          started_at: string;
+          task_id: string | null;
+          task_title: string | null;
+          user_id: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          completed?: boolean;
+          created_at?: string;
+          ended_at?: string | null;
+          focused_seconds?: number;
+          id?: string;
+          outcome?: string | null;
+          planned_minutes: number;
+          started_at?: string;
+          task_id?: string | null;
+          task_title?: string | null;
+          user_id: string;
+        };
+        Update: {
+          completed?: boolean;
+          created_at?: string;
+          ended_at?: string | null;
+          focused_seconds?: number;
+          id?: string;
+          outcome?: string | null;
+          planned_minutes?: number;
+          started_at?: string;
+          task_id?: string | null;
+          task_title?: string | null;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "focus_blocks_task_id_fkey";
+            columns: ["task_id"];
+            isOneToOne: false;
+            referencedRelation: "tasks";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      plans: {
+        Row: {
+          checkin_id: string | null;
+          created_at: string;
+          deadline: string | null;
+          id: string;
+          status: string;
+          user_id: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          checkin_id?: string | null;
+          created_at?: string;
+          deadline?: string | null;
+          id?: string;
+          status?: string;
+          user_id: string;
+        };
+        Update: {
+          checkin_id?: string | null;
+          created_at?: string;
+          deadline?: string | null;
+          id?: string;
+          status?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "plans_checkin_id_fkey";
+            columns: ["checkin_id"];
+            isOneToOne: false;
+            referencedRelation: "checkins";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       profiles: {
         Row: {
           age_confirmed: boolean;
@@ -108,6 +226,87 @@ export type Database = {
           key_hash?: string;
         };
         Relationships: [];
+      };
+      safety_events: {
+        Row: {
+          category: string;
+          checkin_id: string | null;
+          created_at: string;
+          id: string;
+          source: string;
+          user_id: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          category: string;
+          checkin_id?: string | null;
+          created_at?: string;
+          id?: string;
+          source: string;
+          user_id: string;
+        };
+        Update: {
+          category?: string;
+          checkin_id?: string | null;
+          created_at?: string;
+          id?: string;
+          source?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "safety_events_checkin_id_fkey";
+            columns: ["checkin_id"];
+            isOneToOne: false;
+            referencedRelation: "checkins";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      tasks: {
+        Row: {
+          created_at: string;
+          estimate_minutes: number;
+          id: string;
+          music_category: string | null;
+          plan_id: string;
+          position: number;
+          status: string;
+          title: string;
+          user_id: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          created_at?: string;
+          estimate_minutes: number;
+          id?: string;
+          music_category?: string | null;
+          plan_id: string;
+          position: number;
+          status?: string;
+          title: string;
+          user_id: string;
+        };
+        Update: {
+          created_at?: string;
+          estimate_minutes?: number;
+          id?: string;
+          music_category?: string | null;
+          plan_id?: string;
+          position?: number;
+          status?: string;
+          title?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "tasks_plan_id_fkey";
+            columns: ["plan_id"];
+            isOneToOne: false;
+            referencedRelation: "plans";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       waitlist: {
         Row: {
