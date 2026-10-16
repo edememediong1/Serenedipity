@@ -29,6 +29,7 @@ import {
 } from "@/app/app/rooms/actions";
 import { ProgressRing } from "@/components/brand/progress-ring";
 import { GAMES, type GameId } from "@/components/games/catalog";
+import { usePlayer } from "@/components/app/player-context";
 import { useTimer } from "@/components/focus/timer-provider";
 import { Button } from "@/components/ui/button";
 import {
@@ -106,6 +107,7 @@ export function RoomView({
 }) {
   const router = useRouter();
   const timer = useTimer();
+  const personalPlayer = usePlayer();
   const now = useServerNow(500);
   const [stage, setStage] = useState<"lobby" | "in" | "removed">(removedAtLoad ? "removed" : "lobby");
   const [joinError, setJoinError] = useState<string | null>(null);
@@ -250,6 +252,8 @@ export function RoomView({
   // ---------- Actions ----------
   function join() {
     setJoinError(null);
+    // The room's shared music replaces your own while you're in it.
+    personalPlayer.pause();
     startJoin(async () => {
       const res = await joinRoom(room.id);
       if (res.ok) setStage("in");

@@ -78,7 +78,7 @@ All variables are listed with comments in [`.env.example`](.env.example).
 | `/auth/check-email`, `/auth/error` | Post-submit and friendly error screens |
 | `/onboarding/[step]` | welcome, age, goals, rhythm, sound, guide, done; `/onboarding/not-available` for under 18 |
 | `/app` | Home dashboard (the Listen tab) |
-| `/app/listen` | Coming-soon placeholder |
+| `/app/listen` | Music library: playlists by state (Focus, Calm, Clear; `?state=` preselects) and every track |
 | `/app/rooms` | Focus rooms: live and upcoming team rooms, your private rooms; `/app/rooms/new` (Pro) to host |
 | `/app/rooms/[id]` | A room: shared timer, synced music, people, break chat, games on breaks, mic/camera, report, leave |
 | `/app/rooms/join/[code]` | Invite link for a private room |
@@ -138,8 +138,12 @@ Pages and server actions re-check the session themselves.
 - **Safety**: Report (with optional block) is on every person's tile and in the control bar. Blocking hides that
   person's video, voice and messages. Admins review reports at `/admin/reports`; "Remove from room" takes effect in
   the person's app straight away and they can't rejoin.
-- **Test tracks**: `public/audio/*.mp3` are synthetic tones generated for testing, recorded in `tracks` with a
-  licence note. Replace them with licensed music before launch.
+- **Demo music**: ten tracks in `public/audio/` (lofi, jazz, Afro lounge, piano, rain ambient, binaural), all
+  synthesized from code by `python3 scripts/music/render.py` (numpy + ffmpeg), so there are no third-party rights.
+  They're registered in `tracks` and grouped into `playlists` (migration `20261019000100_music_library.sql`).
+  The app-wide player (`components/app/player-context.tsx`) plays playlists in order, keeps playing across pages,
+  supports lock-screen controls, and pauses when you join a room (rooms play their own synced track).
+  Replace or review the demo music before launch.
 - **Games** (`components/games/`): four short, calm games with no scores to chase, streaks or leaderboards.
   They're linked from the focus timer's break screen, offered inside rooms during breaks, and the break ends gently
   ("Break's over") instead of keeping people playing.
