@@ -60,8 +60,13 @@ function useStepAction(step: OnboardingStep) {
   const run = (input: unknown, skip = false) =>
     startTransition(async () => {
       setError(null);
-      const result = await saveOnboardingStep(step, input, skip);
-      if (result && !result.ok) setError(result.message);
+      try {
+        const result = await saveOnboardingStep(step, input, skip);
+        if (result && !result.ok) setError(result.message);
+      } catch (actionError) {
+        console.error("[onboarding] action request failed", actionError);
+        setError("We couldn't continue just now. Refresh the page and try again.");
+      }
     });
   return { pending, error, run };
 }
@@ -450,8 +455,13 @@ function DoneStep({ profile }: { profile: OnboardingProfile }) {
         e.preventDefault();
         startTransition(async () => {
           setError(null);
-          const r = await finishOnboarding({ timezone: browserTimezone() });
-          if (r && !r.ok) setError(r.message);
+          try {
+            const r = await finishOnboarding({ timezone: browserTimezone() });
+            if (r && !r.ok) setError(r.message);
+          } catch (actionError) {
+            console.error("[onboarding] finish request failed", actionError);
+            setError("We couldn't open your space just now. Refresh the page and try again.");
+          }
         });
       }}
     >

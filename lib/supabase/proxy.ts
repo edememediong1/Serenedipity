@@ -32,12 +32,26 @@ export async function updateSession(request: NextRequest) {
 
   let profile: (RoutingProfile & { role: string }) | null = null;
   if (userId) {
-    const { data: row } = await supabase
+    const { data: row, error } = await supabase
       .from("profiles")
       .select("onboarding_step, onboarding_completed_at, age_confirmed, age_confirmed_at, role")
       .eq("id", userId)
       .maybeSingle();
-    profile = row;
+    if (error?.code === "42703" && error.message.includes("profiles.role")) {
+      // Keep auth and onboarding usable during a rolling deploy where application code
+      // arrives before the admin migration that adds profiles.role.
+      console.warn("[auth] profiles.role is missing; apply the latest Supabase migrations");
+      const { data: legacyRow, error: legacyError } = await supabase
+        .from("profiles")
+        .select("onboarding_step, onboarding_completed_at, age_confirmed, age_confirmed_at")
+        .eq("id", userId)
+        .maybeSingle();
+      if (legacyError) console.error("[auth] legacy profile lookup failed", legacyError);
+      profile = legacyRow ? { ...legacyRow, role: "user" } : null;
+    } else {
+      if (error) console.error("[auth] routing profile lookup failed", error);
+      profile = row;
+    }
   }
 
   const { pathname, search } = request.nextUrl;
