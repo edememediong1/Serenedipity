@@ -45,6 +45,25 @@ export type Database = {
         };
         Relationships: [];
       };
+      blocks: {
+        Row: {
+          blocked_id: string;
+          blocker_id: string;
+          created_at: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          blocked_id: string;
+          blocker_id: string;
+          created_at?: string;
+        };
+        Update: {
+          blocked_id?: string;
+          blocker_id?: string;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
       checkins: {
         Row: {
           created_at: string;
@@ -298,6 +317,183 @@ export type Database = {
         };
         Relationships: [];
       };
+      reports: {
+        Row: {
+          created_at: string;
+          details: string | null;
+          id: string;
+          reason: string;
+          reported_user_id: string;
+          reporter_id: string;
+          room_id: string | null;
+          status: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          created_at?: string;
+          details?: string | null;
+          id?: string;
+          reason: string;
+          reported_user_id: string;
+          reporter_id: string;
+          room_id?: string | null;
+          status?: string;
+        };
+        Update: {
+          created_at?: string;
+          details?: string | null;
+          id?: string;
+          reason?: string;
+          reported_user_id?: string;
+          reporter_id?: string;
+          room_id?: string | null;
+          status?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "reports_room_id_fkey";
+            columns: ["room_id"];
+            isOneToOne: false;
+            referencedRelation: "rooms";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      room_messages: {
+        Row: {
+          body: string;
+          created_at: string;
+          display_name: string;
+          id: string;
+          room_id: string;
+          user_id: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          body: string;
+          created_at?: string;
+          display_name: string;
+          id?: string;
+          room_id: string;
+          user_id: string;
+        };
+        Update: {
+          body?: string;
+          created_at?: string;
+          display_name?: string;
+          id?: string;
+          room_id?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "room_messages_room_id_fkey";
+            columns: ["room_id"];
+            isOneToOne: false;
+            referencedRelation: "rooms";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      room_participants: {
+        Row: {
+          joined_at: string;
+          last_seen_at: string;
+          left_at: string | null;
+          removed: boolean;
+          room_id: string;
+          user_id: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          joined_at?: string;
+          last_seen_at?: string;
+          left_at?: string | null;
+          removed?: boolean;
+          room_id: string;
+          user_id: string;
+        };
+        Update: {
+          joined_at?: string;
+          last_seen_at?: string;
+          left_at?: string | null;
+          removed?: boolean;
+          room_id?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "room_participants_room_id_fkey";
+            columns: ["room_id"];
+            isOneToOne: false;
+            referencedRelation: "rooms";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      rooms: {
+        Row: {
+          break_minutes: number;
+          capacity: number;
+          created_at: string;
+          description: string | null;
+          focus_minutes: number;
+          host_id: string | null;
+          id: string;
+          invite_code: string | null;
+          schedule: string;
+          session_minutes: number;
+          starts_at: string;
+          status: string;
+          title: string;
+          track_id: string | null;
+          visibility: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          break_minutes?: number;
+          capacity?: number;
+          created_at?: string;
+          description?: string | null;
+          focus_minutes?: number;
+          host_id?: string | null;
+          id?: string;
+          invite_code?: string | null;
+          schedule?: string;
+          session_minutes?: number;
+          starts_at: string;
+          status?: string;
+          title: string;
+          track_id?: string | null;
+          visibility?: string;
+        };
+        Update: {
+          break_minutes?: number;
+          capacity?: number;
+          created_at?: string;
+          description?: string | null;
+          focus_minutes?: number;
+          host_id?: string | null;
+          id?: string;
+          invite_code?: string | null;
+          schedule?: string;
+          session_minutes?: number;
+          starts_at?: string;
+          status?: string;
+          title?: string;
+          track_id?: string | null;
+          visibility?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "rooms_track_id_fkey";
+            columns: ["track_id"];
+            isOneToOne: false;
+            referencedRelation: "tracks";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       safety_events: {
         Row: {
           category: string;
@@ -422,6 +618,52 @@ export type Database = {
           },
         ];
       };
+      tracks: {
+        Row: {
+          category: string;
+          created_at: string;
+          duration_seconds: number;
+          file_url: string;
+          id: string;
+          is_premium: boolean;
+          license_record: string;
+          slug: string;
+          source: string;
+          status: string;
+          style: string | null;
+          title: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          category: string;
+          created_at?: string;
+          duration_seconds: number;
+          file_url: string;
+          id?: string;
+          is_premium?: boolean;
+          license_record: string;
+          slug: string;
+          source: string;
+          status?: string;
+          style?: string | null;
+          title: string;
+        };
+        Update: {
+          category?: string;
+          created_at?: string;
+          duration_seconds?: number;
+          file_url?: string;
+          id?: string;
+          is_premium?: boolean;
+          license_record?: string;
+          slug?: string;
+          source?: string;
+          status?: string;
+          style?: string | null;
+          title?: string;
+        };
+        Relationships: [];
+      };
       waitlist: {
         Row: {
           created_at: string;
@@ -464,6 +706,7 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
+      is_room_member: { Args: { p_room: string }; Returns: boolean };
       rate_limit_hit: {
         Args: { p_bucket: string; p_key_hash: string; p_max?: number; p_window_seconds?: number };
         Returns: boolean;

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { BarChart3, LayoutDashboard, LogOut, Settings, User } from "lucide-react";
+import { BarChart3, Gamepad2, LayoutDashboard, LogOut, Settings, User } from "lucide-react";
 import { signOut } from "@/app/(auth)/actions";
 import {
   DropdownMenu,
@@ -57,6 +57,11 @@ export function UserMenu({ user, isAdmin = false }: { user: MenuUser; isAdmin?: 
         <DropdownMenuItem asChild>
           <Link href="/app/review">
             <BarChart3 aria-hidden="true" /> Review
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link href="/app/games">
+            <Gamepad2 aria-hidden="true" /> Games
           </Link>
         </DropdownMenuItem>
         <DropdownMenuItem asChild>

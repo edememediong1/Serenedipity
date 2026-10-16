@@ -34,7 +34,7 @@ test.describe("app shell and dashboard", () => {
     );
   });
 
-  test("navigation reaches every placeholder page", async ({ page }) => {
+  test("navigation reaches every main section", async ({ page }) => {
     const nav = page.getByRole("navigation", { name: "App" }).filter({ visible: true });
     for (const [label, title] of [
       ["Check in", "How are you feeling?"],
@@ -45,7 +45,7 @@ test.describe("app shell and dashboard", () => {
       await expect(page.getByRole("main").getByRole("heading", { level: 1 })).toContainText(title);
       await expect(nav.getByRole("link", { name: label })).toHaveAttribute("aria-current", "page");
     }
-    await page.getByRole("main").getByRole("link", { name: "Back to home" }).click();
+    await nav.getByRole("link", { name: "Listen" }).click();
     await expect(page).toHaveURL(/\/app$/);
   });
 
