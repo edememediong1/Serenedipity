@@ -29,6 +29,10 @@ export type SendResult =
   | { ok: true; checkinId: string; turn: LunaTurn }
   | { ok: false; code: "invalid" | "limit" | "unavailable" | "consent" | "error"; message: string };
 
+function hasDatabaseErrorCode(error: unknown, code: string) {
+  return typeof error === "object" && error !== null && "code" in error && error.code === code;
+}
+
 function supportTurn(): LunaTurn {
   return {
     safety: "crisis",
@@ -134,6 +138,13 @@ export async function sendCheckIn(input: z.input<typeof SendSchema>): Promise<Se
       return { ok: false, code: "unavailable", message: "Luna isn't set up yet. Check back soon." };
     }
     console.error("[luna] check-in failed", error);
+    if (hasDatabaseErrorCode(error, "PGRST205")) {
+      return {
+        ok: false,
+        code: "unavailable",
+        message: "Luna's workspace isn't ready yet. Please try again soon.",
+      };
+    }
     return {
       ok: false,
       code: "error",
