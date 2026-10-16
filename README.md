@@ -61,6 +61,7 @@ All variables are listed with comments in [`.env.example`](.env.example).
 | `ANTHROPIC_API_KEY` | Luna's check-ins and plans (Claude, server-only) | For Luna |
 | `DEEPGRAM_API_KEY` / `DEEPGRAM_MODEL` | Voice-note transcription (server-only); without it check-ins are typed | For voice |
 | `LUNA_MOCK` | `true` = canned Luna replies for local dev and e2e. Never set in production | No |
+| `AGORA_APP_ID` / `AGORA_APP_CERTIFICATE` | Mic and camera in focus rooms (tokens issued by `/api/rooms/[id]/rtc-token`, server-only) | For room voice/video |
 | `RATE_LIMIT_SALT` | Hashes IP addresses for the waitlist rate limiter | Yes |
 | `NEXT_PUBLIC_ENABLE_GOOGLE_AUTH` | Shows "Continue with Google" unless `false` | No |
 | `NEXT_PUBLIC_ENABLE_APPLE_AUTH` | Shows "Continue with Apple" when `true` | No |
@@ -77,13 +78,17 @@ All variables are listed with comments in [`.env.example`](.env.example).
 | `/auth/check-email`, `/auth/error` | Post-submit and friendly error screens |
 | `/onboarding/[step]` | welcome, age, goals, rhythm, sound, guide, done; `/onboarding/not-available` for under 18 |
 | `/app` | Home dashboard (the Listen tab) |
-| `/app/listen`, `/app/check-in`, `/app/focus`, `/app/rooms` | Coming-soon placeholders with their glow moods |
+| `/app/listen` | Coming-soon placeholder |
+| `/app/rooms` | Focus rooms: live and upcoming team rooms, your private rooms; `/app/rooms/new` (Pro) to host |
+| `/app/rooms/[id]` | A room: shared timer, synced music, people, break chat, games on breaks, mic/camera, report, leave |
+| `/app/rooms/join/[code]` | Invite link for a private room |
+| `/app/games` | Break games: Breathing bubble, Memory match, Zen tiles, Word of the day (`/app/games/[game]`) |
 | `/app/check-in` | Check-in with Luna (voice or text), plan, reset |
 | `/app/focus` | Timer: techniques (Pomodoro, Deep work, Ultradian, 52/17, Flowtime, Custom), laps |
 | `/app/review` | Day and week review: tasks, timeline, achievement rates, insights, Luna reflection (Pro) |
 | `/app/upgrade` | Pro plan checkout (Stripe) |
 | `/app/settings` | Name, onboarding answers, plan and billing, delete check-ins, sign out |
-| `/admin` | Admin: overview, users (plan/role), waitlist + CSV, limits & settings |
+| `/admin` | Admin: overview, users (plan/role), waitlist + CSV, focus rooms, safety reports, limits & settings |
 | `/design` | Dev-only design gallery |
 
 Routing rules live in `lib/auth/routing.ts` (unit-tested) and run in `proxy.ts` (Next 16's renamed middleware).
@@ -118,6 +123,27 @@ Pages and server actions re-check the session themselves.
 - **Global timer**: the timer runs in a provider in the app shell, so a banner (clock, lap, pause, open) shows on
   every app page while a session is on; optional browser notifications when a block ends.
 
+## Focus rooms and games
+
+- **Rooms** (`rooms`, `room_participants`, `room_messages`, `reports`, `blocks`, `tracks`; migration
+  `20261018000100_rooms.sql`). Admins schedule public rooms at `/admin/rooms` (once, hourly, daily, weekdays);
+  Pro members host up to 3 private rooms with an invite link. Free members get one trial room. 18+ only.
+- **Sync without a ticking server**: every client derives the session, focus/break phase and music position from the
+  room's schedule and the server clock (`lib/rooms/schedule.ts`, `GET /api/time`); the audio re-seeks if it drifts
+  more than 0.6s.
+- **Realtime**: presence on a private Supabase Realtime channel `room:<id>` (RLS on `realtime.messages` lets only
+  members in), chat inserts and removals via Postgres changes. Chat is open during breaks only, checked on the server.
+- **Mic and camera** use Agora (`agora-rtc-sdk-ng` in the browser, tokens from `agora-token` on the server). Both are
+  off by default. Tokens last 10 minutes and renewal is refused once someone is removed.
+- **Safety**: Report (with optional block) is on every person's tile and in the control bar. Blocking hides that
+  person's video, voice and messages. Admins review reports at `/admin/reports`; "Remove from room" takes effect in
+  the person's app straight away and they can't rejoin.
+- **Test tracks**: `public/audio/*.mp3` are synthetic tones generated for testing, recorded in `tracks` with a
+  licence note. Replace them with licensed music before launch.
+- **Games** (`components/games/`): four short, calm games with no scores to chase, streaks or leaderboards.
+  They're linked from the focus timer's break screen, offered inside rooms during breaks, and the break ends gently
+  ("Break's over") instead of keeping people playing.
+
 ## Production setup (Supabase)
 
 1. Create a Supabase project. Put its URL and publishable key in Vercel env vars (see table above).
@@ -133,7 +159,7 @@ Pages and server actions re-check the session themselves.
 
 ## Dev helpers
 
-`scripts/screenshot.mjs`, `scripts/app-shots.mjs`, `scripts/onboarding-shots.mjs` and
+`scripts/screenshot.mjs`, `scripts/app-shots.mjs`, `scripts/onboarding-shots.mjs`, `scripts/rooms-shots.mjs` and
 `scripts/magic-link-probe.mjs` capture screens at given widths and exercise the real magic-link flow against
 local Supabase (Mailpit). They're for local review only.
 

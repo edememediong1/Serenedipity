@@ -9,13 +9,11 @@ const ITEMS = [
   { href: "/admin", label: "Overview", icon: BarChart3 },
   { href: "/admin/users", label: "Users", icon: Users },
   { href: "/admin/waitlist", label: "Waitlist", icon: ListOrdered },
+  { href: "/admin/rooms", label: "Focus rooms", icon: UsersRound },
+  { href: "/admin/reports", label: "Safety reports", icon: Flag },
   { href: "/admin/settings", label: "Limits & settings", icon: Settings },
 ];
-const SOON = [
-  { label: "Music library", icon: Music },
-  { label: "Focus rooms", icon: UsersRound },
-  { label: "Safety reports", icon: Flag },
-];
+const SOON = [{ label: "Music library", icon: Music }];
 
 export function AdminNav() {
   const pathname = usePathname();

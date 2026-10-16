@@ -1,6 +1,7 @@
 import { Search } from "lucide-react";
 import { Suspense } from "react";
 import { Logo } from "@/components/brand/logo";
+import { HideInRoom } from "@/components/app/hide-in-room";
 import { MiniPlayer } from "@/components/app/mini-player";
 import { SidebarNav, TabBar } from "@/components/app/nav-link";
 import { PlayerProvider } from "@/components/app/player-context";
@@ -77,7 +78,9 @@ export default function AppLayout({ children }: LayoutProps<"/app">) {
               </div>
             </header>
 
-            <TimerBanner />
+            <Suspense fallback={null}>
+              <TimerBanner />
+            </Suspense>
             <main id="main" className="pt-4 pb-56 lg:pt-2 lg:pb-36">
               {children}
             </main>
@@ -86,16 +89,20 @@ export default function AppLayout({ children }: LayoutProps<"/app">) {
           {/* Desktop: player docked at the bottom of the content area */}
           <div className="pointer-events-none fixed right-0 bottom-0 left-64 z-20 hidden px-10 pb-6 lg:block">
             <div className="pointer-events-auto mx-auto max-w-6xl">
-              <MiniPlayer className="max-w-xl" />
+              <HideInRoom>
+                <MiniPlayer className="max-w-xl" />
+              </HideInRoom>
             </div>
           </div>
         </div>
 
         {/* Mobile: mini player above the tab bar */}
         <div className="fixed inset-x-0 bottom-0 z-30 lg:hidden">
-          <div className="px-3 pb-2">
-            <MiniPlayer />
-          </div>
+          <HideInRoom>
+            <div className="px-3 pb-2">
+              <MiniPlayer />
+            </div>
+          </HideInRoom>
           <TabBar />
         </div>
       </TimerProvider>

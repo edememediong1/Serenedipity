@@ -105,3 +105,52 @@ export async function seedDay(
     })),
   );
 }
+
+/** A one-off public room whose session started `minutesAgo` minutes ago (25 on / 5 off, 55 minutes). */
+export async function createRoom(
+  minutesAgo: number,
+  patch: Database["public"]["Tables"]["rooms"]["Insert"] | object = {},
+) {
+  const db = admin();
+  const { data: track } = await db.from("tracks").select("id").eq("slug", "glass-hours").single();
+  const { data, error } = await db
+    .from("rooms")
+    .insert({
+      title: `Test room ${Math.random().toString(36).slice(2, 6)}`,
+      schedule: "once",
+      starts_at: new Date(Date.now() - minutesAgo * 60_000).toISOString(),
+      session_minutes: 55,
+      focus_minutes: 25,
+      break_minutes: 5,
+      track_id: track?.id ?? null,
+      ...patch,
+    })
+    .select("id, title")
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function participant(roomId: string, userId: string) {
+  const { data } = await admin()
+    .from("room_participants")
+    .select("removed, left_at")
+    .eq("room_id", roomId)
+    .eq("user_id", userId)
+    .maybeSingle();
+  return data;
+}
+
+export async function archiveRoomForTest(roomId: string) {
+  await admin().from("rooms").update({ status: "archived" }).eq("id", roomId);
+}
+
+export async function isBlocked(blocker: string, blocked: string) {
+  const { data } = await admin()
+    .from("blocks")
+    .select("blocked_id")
+    .eq("blocker_id", blocker)
+    .eq("blocked_id", blocked)
+    .maybeSingle();
+  return !!data;
+}

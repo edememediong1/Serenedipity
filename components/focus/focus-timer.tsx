@@ -1,7 +1,18 @@
 "use client";
 
 import Link from "next/link";
-import { Bell, BellOff, Check, Minus, Pause, Play, Plus, RotateCcw, SkipForward } from "lucide-react";
+import {
+  ArrowRight,
+  Bell,
+  BellOff,
+  Check,
+  Minus,
+  Pause,
+  Play,
+  Plus,
+  RotateCcw,
+  SkipForward,
+} from "lucide-react";
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { getUnstuck } from "@/app/app/focus/actions";
 import { ProgressRing } from "@/components/brand/progress-ring";
@@ -105,17 +116,25 @@ export function FocusTimer({ plan, startWithReset, technique, laps, custom }: Pr
           </div>
         )
       ) : (
-        <h1 className="type-h1 md:text-[44px] md:leading-[48px]">
-          {t.timer.kind === "long_break" ? (
-            <>
-              A longer <em>pause</em>
-            </>
-          ) : (
-            <>
-              Breathe, <em>stretch</em>, look away
-            </>
-          )}
-        </h1>
+        <div className="flex flex-col items-center gap-2">
+          <h1 className="type-h1 md:text-[44px] md:leading-[48px]">
+            {t.timer.kind === "long_break" ? (
+              <>
+                A longer <em>pause</em>
+              </>
+            ) : (
+              <>
+                Breathe, <em>stretch</em>, look away
+              </>
+            )}
+          </h1>
+          <Link
+            href="/app/games"
+            className="inline-flex min-h-11 items-center gap-2 rounded-sm type-body-sm font-semibold text-blue-soft focus-ring hover:underline"
+          >
+            Or play something calm <ArrowRight className="size-4 stroke-[1.5]" aria-hidden="true" />
+          </Link>
+        </div>
       )}
 
       {t.done ? (

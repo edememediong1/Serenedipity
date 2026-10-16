@@ -4,7 +4,8 @@ import type { Database } from "./database.types";
 
 /**
  * Service-role Supabase client. Bypasses row-level security, so use it ONLY on the server, only after
- * an explicit admin check (lib/auth/admin.ts) or inside a verified webhook (Stripe).
+ * an explicit admin check (lib/auth/admin.ts), inside a verified webhook (Stripe), or in a room action
+ * after it has checked the caller's session, plan and membership (app/app/rooms/actions.ts).
  */
 export function createAdminClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;

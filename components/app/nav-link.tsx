@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { Suspense } from "react";
 import { cn } from "@/lib/utils";
-import { isActive, PRIMARY_NAV, REVIEW_NAV, SETTINGS_NAV, type NavItem } from "./nav-items";
+import { isActive, PRIMARY_NAV, REVIEW_NAV, GAMES_NAV, SETTINGS_NAV, type NavItem } from "./nav-items";
 
 function SidebarLink({ item, pathname }: { item: NavItem; pathname: string }) {
   const active = isActive(item, pathname);
@@ -23,15 +24,32 @@ function SidebarLink({ item, pathname }: { item: NavItem; pathname: string }) {
   );
 }
 
+/**
+ * The active item depends on the URL, which isn't known while a dynamic route prerenders, so each
+ * nav renders without a highlight first and streams the highlighted version in.
+ */
+function withPathname(View: (p: { pathname: string }) => React.ReactNode) {
+  function Live() {
+    return <View pathname={usePathname()} />;
+  }
+  return function Nav() {
+    return (
+      <Suspense fallback={<View pathname="" />}>
+        <Live />
+      </Suspense>
+    );
+  };
+}
+
 /** Desktop sidebar navigation: primary items, a divider, then Settings. */
-export function SidebarNav() {
-  const pathname = usePathname();
+function SidebarNavView({ pathname }: { pathname: string }) {
   return (
     <nav aria-label="App" className="flex flex-1 flex-col gap-1">
       {PRIMARY_NAV.map((item) => (
         <SidebarLink key={item.href} item={item} pathname={pathname} />
       ))}
       <SidebarLink item={REVIEW_NAV} pathname={pathname} />
+      <SidebarLink item={GAMES_NAV} pathname={pathname} />
       <hr className="my-3 border-line" />
       <SidebarLink item={SETTINGS_NAV} pathname={pathname} />
     </nav>
@@ -39,8 +57,7 @@ export function SidebarNav() {
 }
 
 /** Mobile bottom tab bar. */
-export function TabBar() {
-  const pathname = usePathname();
+function TabBarView({ pathname }: { pathname: string }) {
   return (
     <nav
       aria-label="App"
@@ -67,3 +84,6 @@ export function TabBar() {
     </nav>
   );
 }
+
+export const SidebarNav = withPathname(SidebarNavView);
+export const TabBar = withPathname(TabBarView);
