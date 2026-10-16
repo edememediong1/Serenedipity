@@ -3,7 +3,7 @@ import { Suspense } from "react";
 import { FocusTimer, type FocusPlan } from "@/components/focus/focus-timer";
 import { GlowBackground } from "@/components/brand/glow-background";
 import { getSessionProfile } from "@/lib/auth/session";
-import { DEFAULT_SETTINGS } from "@/lib/timer/engine";
+import type { TechniqueId } from "@/lib/timer/techniques";
 
 export const metadata: Metadata = { title: "Focus" };
 
@@ -50,14 +50,15 @@ async function FocusLoader({ searchParams }: { searchParams: PageProps<"/app/foc
 
   return (
     <FocusTimer
-      key={plan?.id ?? "free"}
       plan={plan}
       startWithReset={params.reset === "1"}
-      settings={{
-        ...DEFAULT_SETTINGS,
+      technique={(profile.focus_technique as TechniqueId) ?? "pomodoro"}
+      laps={profile.focus_laps}
+      custom={{
         focusMinutes: profile.default_focus_minutes,
         shortBreakMinutes: profile.default_break_minutes,
-        longBreakMinutes: Math.max(15, profile.default_break_minutes * 3),
+        longBreakMinutes: profile.long_break_minutes,
+        longBreakEvery: profile.long_break_every,
       }}
     />
   );

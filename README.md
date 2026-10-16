@@ -54,7 +54,10 @@ All variables are listed with comments in [`.env.example`](.env.example).
 | `NEXT_PUBLIC_SITE_URL` | Metadata, sitemap, canonical URLs | Yes |
 | `NEXT_PUBLIC_SUPABASE_URL` | Supabase client (browser + server) | Yes |
 | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Supabase client (browser + server) | Yes |
-| `SUPABASE_SECRET_KEY` | E2E tests only (create test users and magic links). Never exposed to the app | Tests |
+| `SUPABASE_SECRET_KEY` | Admin dashboard, Stripe webhook, and e2e tests (server-only) | Yes |
+| `ADMIN_EMAILS` | Comma-separated emails with admin access (in addition to `profiles.role = admin`) | No |
+| `STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET` | Stripe API and webhook signing (server-only) | For Pro |
+| `STRIPE_PRICE_MONTHLY` / `STRIPE_PRICE_YEARLY` | Price IDs for Pro ($7.99 / $59.99) | For Pro |
 | `ANTHROPIC_API_KEY` | Luna's check-ins and plans (Claude, server-only) | For Luna |
 | `DEEPGRAM_API_KEY` / `DEEPGRAM_MODEL` | Voice-note transcription (server-only); without it check-ins are typed | For voice |
 | `LUNA_MOCK` | `true` = canned Luna replies for local dev and e2e. Never set in production | No |
@@ -75,7 +78,12 @@ All variables are listed with comments in [`.env.example`](.env.example).
 | `/onboarding/[step]` | welcome, age, goals, rhythm, sound, guide, done; `/onboarding/not-available` for under 18 |
 | `/app` | Home dashboard (the Listen tab) |
 | `/app/listen`, `/app/check-in`, `/app/focus`, `/app/rooms` | Coming-soon placeholders with their glow moods |
-| `/app/settings` | Edit name and onboarding answers; plan and sign out |
+| `/app/check-in` | Check-in with Luna (voice or text), plan, reset |
+| `/app/focus` | Timer: techniques (Pomodoro, Deep work, Ultradian, 52/17, Flowtime, Custom), laps |
+| `/app/review` | Day and week review: tasks, timeline, achievement rates, insights, Luna reflection (Pro) |
+| `/app/upgrade` | Pro plan checkout (Stripe) |
+| `/app/settings` | Name, onboarding answers, plan and billing, delete check-ins, sign out |
+| `/admin` | Admin: overview, users (plan/role), waitlist + CSV, limits & settings |
 | `/design` | Dev-only design gallery |
 
 Routing rules live in `lib/auth/routing.ts` (unit-tested) and run in `proxy.ts` (Next 16's renamed middleware).
@@ -95,6 +103,20 @@ Pages and server actions re-check the session themselves.
 - **Focus timer** (`/app/focus`): timestamp-based engine in `lib/timer/engine.ts` (accurate in background tabs),
   long break every 4 blocks, chime, Done / Need more time / Stuck between blocks, "I'm stuck" asks Luna for a
   smaller step. Blocks are saved to `focus_blocks` and feed the dashboard's Today card.
+
+## Admin, limits and billing
+
+- **Admins**: anyone in `ADMIN_EMAILS` or with `profiles.role = 'admin'` (set it from `/admin/users`, or in SQL:
+  `update profiles set role = 'admin' where id = (select id from auth.users where email = 'you@example.com');`).
+  Admins are never limited and can open `/admin`.
+- **Daily check-in limits** live in `app_settings` and are edited at `/admin/settings` (free default 1, Pro unlimited).
+- **Stripe**: create a product "Pro" with two recurring prices (monthly $7.99, yearly $59.99), put the price IDs and
+  secret key in env, and add a webhook endpoint `https://<domain>/api/stripe/webhook` for
+  `checkout.session.completed` and `customer.subscription.created/updated/deleted`; copy its signing secret into
+  `STRIPE_WEBHOOK_SECRET`. Turn on the Customer Portal (Settings > Billing > Customer portal). New subscribers get a
+  7-day trial. Locally: `stripe listen --forward-to localhost:3000/api/stripe/webhook`.
+- **Global timer**: the timer runs in a provider in the app shell, so a banner (clock, lap, pause, open) shows on
+  every app page while a session is on; optional browser notifications when a block ends.
 
 ## Production setup (Supabase)
 

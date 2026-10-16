@@ -23,6 +23,28 @@ export type Database = {
   };
   public: {
     Tables: {
+      app_settings: {
+        Row: {
+          key: string;
+          updated_at: string;
+          updated_by: string | null;
+          value: NonNullable<Json>;
+        };
+        ComputedFields: never;
+        Insert: {
+          key: string;
+          updated_at?: string;
+          updated_by?: string | null;
+          value: NonNullable<Json>;
+        };
+        Update: {
+          key?: string;
+          updated_at?: string;
+          updated_by?: string | null;
+          value?: NonNullable<Json>;
+        };
+        Relationships: [];
+      };
       checkins: {
         Row: {
           created_at: string;
@@ -61,11 +83,13 @@ export type Database = {
           ended_at: string | null;
           focused_seconds: number;
           id: string;
+          lap: number | null;
           outcome: string | null;
           planned_minutes: number;
           started_at: string;
           task_id: string | null;
           task_title: string | null;
+          technique: string | null;
           user_id: string;
         };
         ComputedFields: never;
@@ -75,11 +99,13 @@ export type Database = {
           ended_at?: string | null;
           focused_seconds?: number;
           id?: string;
+          lap?: number | null;
           outcome?: string | null;
           planned_minutes: number;
           started_at?: string;
           task_id?: string | null;
           task_title?: string | null;
+          technique?: string | null;
           user_id: string;
         };
         Update: {
@@ -88,11 +114,13 @@ export type Database = {
           ended_at?: string | null;
           focused_seconds?: number;
           id?: string;
+          lap?: number | null;
           outcome?: string | null;
           planned_minutes?: number;
           started_at?: string;
           task_id?: string | null;
           task_title?: string | null;
+          technique?: string | null;
           user_id?: string;
         };
         Relationships: [
@@ -151,13 +179,18 @@ export type Database = {
           default_break_minutes: number;
           default_focus_minutes: number;
           display_name: string | null;
+          focus_laps: number;
+          focus_technique: string;
           goals: string[];
           has_headphones: boolean | null;
           id: string;
+          long_break_every: number;
+          long_break_minutes: number;
           music_prefs: string[];
           onboarding_completed_at: string | null;
           onboarding_step: number;
           plan: string;
+          role: string;
           timezone: string | null;
           updated_at: string;
           work_style: string | null;
@@ -172,13 +205,18 @@ export type Database = {
           default_break_minutes?: number;
           default_focus_minutes?: number;
           display_name?: string | null;
+          focus_laps?: number;
+          focus_technique?: string;
           goals?: string[];
           has_headphones?: boolean | null;
           id: string;
+          long_break_every?: number;
+          long_break_minutes?: number;
           music_prefs?: string[];
           onboarding_completed_at?: string | null;
           onboarding_step?: number;
           plan?: string;
+          role?: string;
           timezone?: string | null;
           updated_at?: string;
           work_style?: string | null;
@@ -192,13 +230,18 @@ export type Database = {
           default_break_minutes?: number;
           default_focus_minutes?: number;
           display_name?: string | null;
+          focus_laps?: number;
+          focus_technique?: string;
           goals?: string[];
           has_headphones?: boolean | null;
           id?: string;
+          long_break_every?: number;
+          long_break_minutes?: number;
           music_prefs?: string[];
           onboarding_completed_at?: string | null;
           onboarding_step?: number;
           plan?: string;
+          role?: string;
           timezone?: string | null;
           updated_at?: string;
           work_style?: string | null;
@@ -224,6 +267,34 @@ export type Database = {
           created_at?: string;
           id?: never;
           key_hash?: string;
+        };
+        Relationships: [];
+      };
+      reflections: {
+        Row: {
+          content: NonNullable<Json>;
+          created_at: string;
+          id: string;
+          period: string;
+          period_start: string;
+          user_id: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          content: NonNullable<Json>;
+          created_at?: string;
+          id?: string;
+          period?: string;
+          period_start: string;
+          user_id: string;
+        };
+        Update: {
+          content?: NonNullable<Json>;
+          created_at?: string;
+          id?: string;
+          period?: string;
+          period_start?: string;
+          user_id?: string;
         };
         Relationships: [];
       };
@@ -263,8 +334,49 @@ export type Database = {
           },
         ];
       };
+      subscriptions: {
+        Row: {
+          billing_interval: string | null;
+          cancel_at_period_end: boolean;
+          current_period_end: string | null;
+          price_id: string | null;
+          status: string;
+          stripe_customer_id: string | null;
+          stripe_subscription_id: string | null;
+          trial_end: string | null;
+          updated_at: string;
+          user_id: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          billing_interval?: string | null;
+          cancel_at_period_end?: boolean;
+          current_period_end?: string | null;
+          price_id?: string | null;
+          status?: string;
+          stripe_customer_id?: string | null;
+          stripe_subscription_id?: string | null;
+          trial_end?: string | null;
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: {
+          billing_interval?: string | null;
+          cancel_at_period_end?: boolean;
+          current_period_end?: string | null;
+          price_id?: string | null;
+          status?: string;
+          stripe_customer_id?: string | null;
+          stripe_subscription_id?: string | null;
+          trial_end?: string | null;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [];
+      };
       tasks: {
         Row: {
+          completed_at: string | null;
           created_at: string;
           estimate_minutes: number;
           id: string;
@@ -277,6 +389,7 @@ export type Database = {
         };
         ComputedFields: never;
         Insert: {
+          completed_at?: string | null;
           created_at?: string;
           estimate_minutes: number;
           id?: string;
@@ -288,6 +401,7 @@ export type Database = {
           user_id: string;
         };
         Update: {
+          completed_at?: string | null;
           created_at?: string;
           estimate_minutes?: number;
           id?: string;

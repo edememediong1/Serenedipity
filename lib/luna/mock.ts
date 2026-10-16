@@ -1,4 +1,4 @@
-import type { LunaMessage, LunaTurn, StuckTurn } from "./schema";
+import type { LunaMessage, LunaTurn, Reflection, StuckTurn } from "./schema";
 
 /**
  * Deterministic stand-in for Claude, used only when LUNA_MOCK=true (local dev and e2e tests).
@@ -50,5 +50,14 @@ export function mockStuck(taskTitle: string): StuckTurn {
     reply: "Stuck is normal. Let's shrink it until it's easy to start.",
     next_step: `Write three rough bullet points for "${taskTitle}"`,
     estimate_minutes: 10,
+  };
+}
+
+export function mockReflection(): Reflection {
+  return {
+    headline: "A steady week with a strong start.",
+    went_well: ["You showed up on most days.", "Mornings carried your deepest work."],
+    to_improve: ["Plans ran a little long midweek; try one fewer task."],
+    next_week: "Protect two morning laps on Tuesday and Thursday.",
   };
 }

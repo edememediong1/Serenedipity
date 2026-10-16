@@ -30,18 +30,24 @@ export async function updateSession(request: NextRequest) {
   const { data } = await supabase.auth.getClaims();
   const userId = data?.claims?.sub ?? null;
 
-  let profile: RoutingProfile | null = null;
+  let profile: (RoutingProfile & { role: string }) | null = null;
   if (userId) {
     const { data: row } = await supabase
       .from("profiles")
-      .select("onboarding_step, onboarding_completed_at, age_confirmed, age_confirmed_at")
+      .select("onboarding_step, onboarding_completed_at, age_confirmed, age_confirmed_at, role")
       .eq("id", userId)
       .maybeSingle();
     profile = row;
   }
 
   const { pathname, search } = request.nextUrl;
-  const target = resolveRedirect({ pathname, search, isSignedIn: !!userId, profile });
+  const email = typeof data?.claims?.email === "string" ? data.claims.email.toLowerCase() : null;
+  const adminEmails = (process.env.ADMIN_EMAILS ?? "")
+    .split(",")
+    .map((e) => e.trim().toLowerCase())
+    .filter(Boolean);
+  const isAdminUser = profile?.role === "admin" || (!!email && adminEmails.includes(email));
+  const target = resolveRedirect({ pathname, search, isSignedIn: !!userId, profile, isAdminUser });
 
   if (target) {
     const redirect = NextResponse.redirect(new URL(target, request.url));

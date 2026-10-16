@@ -1,4 +1,4 @@
-import { Clock, Headphones, MessageCircle, Settings, Users, type LucideIcon } from "lucide-react";
+import { BarChart3, Clock, Headphones, MessageCircle, Settings, Users, type LucideIcon } from "lucide-react";
 
 export type NavItem = {
   href: string;
@@ -15,6 +15,9 @@ export const PRIMARY_NAV: readonly NavItem[] = [
   { href: "/app/focus", label: "Focus", icon: Clock },
   { href: "/app/rooms", label: "Rooms", icon: Users },
 ];
+
+/** In the desktop sidebar; on mobile it lives in the account menu and on the home page. */
+export const REVIEW_NAV: NavItem = { href: "/app/review", label: "Review", icon: BarChart3 };
 
 export const SETTINGS_NAV: NavItem = { href: "/app/settings", label: "Settings", icon: Settings };
 

@@ -85,3 +85,12 @@ export const StuckSchema = z.object({
   estimate_minutes: z.number(),
 });
 export type StuckTurn = z.infer<typeof StuckSchema>;
+
+/** Luna's weekly reflection over aggregate stats (never check-in text). */
+export const ReflectionSchema = z.object({
+  headline: z.string(),
+  went_well: z.array(z.string()),
+  to_improve: z.array(z.string()),
+  next_week: z.string(),
+});
+export type Reflection = z.infer<typeof ReflectionSchema>;

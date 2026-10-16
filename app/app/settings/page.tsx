@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
-import { LogOut, Sparkles } from "lucide-react";
+import Link from "next/link";
+import { CreditCard, LogOut, Sparkles } from "lucide-react";
+import { openBillingPortal } from "@/app/app/upgrade/actions";
 import { Suspense } from "react";
 import { signOut } from "@/app/(auth)/actions";
 import { DeleteCheckins } from "@/components/app/delete-checkins";
@@ -33,22 +35,7 @@ async function SettingsContent() {
         }}
       />
       <div className="flex flex-col gap-6">
-        <GlassCard id="plan" className="flex scroll-mt-24 flex-col gap-4 p-6">
-          <h2 className="type-h2">Plan</h2>
-          <p className="flex items-center justify-between">
-            <span className="text-ink-muted">Current plan</span>
-            <span className="rounded-pill border border-line px-3 py-0.5 type-body-sm">
-              {profile.plan === "premium" ? "Premium" : "Free"}
-            </span>
-          </p>
-          {/* TODO(billing): Stripe Checkout and the customer portal (PRD 4.6). */}
-          <Button variant="secondary" disabled block>
-            <Sparkles aria-hidden="true" /> Upgrade (coming soon)
-          </Button>
-          <p className="type-body-sm text-ink-muted">
-            Premium unlocks the full library, the binaural layer and every room.
-          </p>
-        </GlassCard>
+        <PlanCard />
         <GlassCard className="flex flex-col gap-4 p-6">
           <h2 className="type-h2">Check-ins</h2>
           <DeleteCheckins />
@@ -67,6 +54,81 @@ async function SettingsContent() {
         </GlassCard>
       </div>
     </div>
+  );
+}
+
+const SUB_LABEL: Record<string, string> = {
+  trialing: "Free trial",
+  active: "Active",
+  past_due: "Payment due",
+  canceled: "Cancelled",
+  unpaid: "Unpaid",
+  incomplete: "Incomplete",
+  paused: "Paused",
+};
+
+async function PlanCard() {
+  const { user, profile, supabase } = await getSessionProfile();
+  const { data: sub } = await supabase
+    .from("subscriptions")
+    .select(
+      "status, billing_interval, current_period_end, cancel_at_period_end, trial_end, stripe_customer_id",
+    )
+    .eq("user_id", user.id)
+    .maybeSingle();
+  const pro = profile.plan === "premium";
+  const date = (iso: string | null) =>
+    iso
+      ? new Date(iso).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })
+      : null;
+  const ends = date(sub?.current_period_end ?? null);
+  return (
+    <GlassCard id="plan" className="flex scroll-mt-24 flex-col gap-4 p-6">
+      <h2 className="type-h2">Plan</h2>
+      <p className="flex items-center justify-between">
+        <span className="text-ink-muted">Current plan</span>
+        <span className="rounded-pill border border-line px-3 py-0.5 type-body-sm">
+          {pro ? "Pro" : "Free"}
+        </span>
+      </p>
+      {sub && sub.status !== "none" ? (
+        <dl className="flex flex-col gap-1 type-body-sm">
+          <div className="flex justify-between">
+            <dt className="text-ink-muted">Billing</dt>
+            <dd>
+              {SUB_LABEL[sub.status] ?? sub.status}
+              {sub.billing_interval ? ` · ${sub.billing_interval === "year" ? "yearly" : "monthly"}` : ""}
+            </dd>
+          </div>
+          {ends ? (
+            <div className="flex justify-between">
+              <dt className="text-ink-muted">
+                {sub.cancel_at_period_end ? "Pro ends" : sub.status === "trialing" ? "Trial ends" : "Renews"}
+              </dt>
+              <dd>{sub.status === "trialing" && sub.trial_end ? date(sub.trial_end) : ends}</dd>
+            </div>
+          ) : null}
+        </dl>
+      ) : null}
+      {sub?.stripe_customer_id && sub.status !== "none" ? (
+        <form action={openBillingPortal}>
+          <Button type="submit" variant="secondary" block>
+            <CreditCard aria-hidden="true" /> Manage billing
+          </Button>
+        </form>
+      ) : null}
+      {!pro ? (
+        <Button asChild block>
+          <Link href="/app/upgrade">
+            <Sparkles aria-hidden="true" /> Upgrade to Pro
+          </Link>
+        </Button>
+      ) : null}
+      <p className="type-body-sm text-ink-muted">
+        Pro unlocks unlimited check-ins, weekly reflections, the full library, the binaural layer and every
+        room.
+      </p>
+    </GlassCard>
   );
 }
 

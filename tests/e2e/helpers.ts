@@ -48,3 +48,60 @@ export async function completeOnboarding(userId: string, displayName = "Ada") {
     .eq("id", userId);
   if (error) throw error;
 }
+
+export async function setProfile(userId: string, patch: Database["public"]["Tables"]["profiles"]["Update"]) {
+  const { error } = await admin().from("profiles").update(patch).eq("id", userId);
+  if (error) throw error;
+}
+
+export async function setSetting(
+  key: "free_daily_checkins" | "premium_daily_checkins" | "luna_enabled",
+  value: number | boolean | string,
+) {
+  const { error } = await admin().from("app_settings").upsert({ key, value });
+  if (error) throw error;
+}
+
+/** Inserts a plan with tasks and focus blocks dated `daysAgo` days back (UTC). */
+export async function seedDay(
+  userId: string,
+  daysAgo: number,
+  tasks: { title: string; status: "todo" | "done" | "skipped" }[],
+  blocks = 2,
+) {
+  const at = (h: number) => {
+    const d = new Date();
+    d.setUTCDate(d.getUTCDate() - daysAgo);
+    d.setUTCHours(h, 0, 0, 0);
+    return d.toISOString();
+  };
+  const db = admin();
+  const { data: plan, error } = await db
+    .from("plans")
+    .insert({ user_id: userId, created_at: at(8), status: "completed" })
+    .select("id")
+    .single();
+  if (error || !plan) throw error;
+  await db.from("tasks").insert(
+    tasks.map((t, i) => ({
+      ...t,
+      plan_id: plan.id,
+      user_id: userId,
+      estimate_minutes: 25,
+      position: i,
+      created_at: at(8),
+    })),
+  );
+  await db.from("focus_blocks").insert(
+    Array.from({ length: blocks }, (_, i) => ({
+      user_id: userId,
+      task_title: tasks[i % tasks.length]?.title ?? "Focus",
+      planned_minutes: 25,
+      started_at: at(9 + i),
+      focused_seconds: 25 * 60,
+      completed: true,
+      outcome: "done",
+      technique: "pomodoro",
+    })),
+  );
+}

@@ -40,12 +40,20 @@ export function TodayCard({ minutes = 0, blocks = 0 }: { minutes?: number; block
           {blocks} {blocks === 1 ? "block" : "blocks"} done. Nice work.
         </p>
       )}
-      <Link
-        href="/app/focus"
-        className="mt-auto inline-flex min-h-11 w-fit items-center gap-2 rounded-sm type-body-sm font-semibold text-blue-soft focus-ring hover:underline"
-      >
-        Start a focus block <ArrowRight className="size-4 stroke-[1.5]" aria-hidden="true" />
-      </Link>
+      <div className="mt-auto flex flex-wrap gap-x-6">
+        <Link
+          href="/app/focus"
+          className="inline-flex min-h-11 w-fit items-center gap-2 rounded-sm type-body-sm font-semibold text-blue-soft focus-ring hover:underline"
+        >
+          Start a focus block <ArrowRight className="size-4 stroke-[1.5]" aria-hidden="true" />
+        </Link>
+        <Link
+          href="/app/review"
+          className="inline-flex min-h-11 w-fit items-center gap-2 rounded-sm type-body-sm font-semibold text-blue-soft focus-ring hover:underline"
+        >
+          How did yesterday go? <ArrowRight className="size-4 stroke-[1.5]" aria-hidden="true" />
+        </Link>
+      </div>
     </GlassCard>
   );
 }

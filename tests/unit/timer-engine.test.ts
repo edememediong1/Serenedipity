@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
+import { settingsFor, TECHNIQUES } from "@/lib/timer/techniques";
 import {
   advance,
+  currentLap,
+  flowBreakMs,
+  sessionComplete,
   createTimer,
   DEFAULT_SETTINGS,
   elapsedMs,
@@ -78,5 +82,35 @@ describe("timer engine", () => {
     expect(formatClock(25 * MIN)).toBe("25:00");
     expect(formatClock(18 * MIN + 41_200)).toBe("18:42");
     expect(formatClock(0)).toBe("00:00");
+  });
+
+  it("flowtime breaks are a fifth of the focus time, between 5 and 30 minutes", () => {
+    const flow = settingsFor("flowtime", S);
+    let t = start(createTimer(flow), 0);
+    expect(remainingMs(t, 0)).toBe(120 * MIN); // the cap
+    t = pause(t, 40 * MIN);
+    const brk = advance(t, flow, true, 40 * MIN);
+    expect(brk.kind).toBe("short_break");
+    expect(brk.durationMs).toBe(8 * MIN);
+    expect(flowBreakMs(5 * MIN)).toBe(5 * MIN);
+    expect(flowBreakMs(300 * MIN)).toBe(30 * MIN);
+  });
+
+  it("tracks laps and session completion", () => {
+    let t = createTimer(S);
+    expect(currentLap(t, 3)).toBe(1);
+    t = advance(t, S); // break after lap 1
+    expect(currentLap(t, 3)).toBe(1);
+    t = advance(advance(advance(t, S), S), S); // lap 2 done, then lap 3 focus
+    expect(currentLap(t, 3)).toBe(3);
+    expect(sessionComplete(advance(t, S), 3)).toBe(true);
+  });
+
+  it("every technique has sane lengths", () => {
+    for (const tech of TECHNIQUES) {
+      const s = settingsFor(tech.id, S);
+      expect(s.focusMinutes).toBeGreaterThan(0);
+      expect(s.shortBreakMinutes).toBeGreaterThan(0);
+    }
   });
 });

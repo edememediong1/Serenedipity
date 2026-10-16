@@ -107,7 +107,7 @@ export function PricingPlans() {
             className="pointer-events-none absolute -top-24 -right-24 size-64 rounded-pill bg-violet/30 blur-3xl"
           />
           <div className="relative flex flex-col gap-2">
-            <h3 className="type-h2">Premium</h3>
+            <h3 className="type-h2">Pro</h3>
             <p className="text-ink-muted">Everything, for your deepest work.</p>
           </div>
           <div className="relative" aria-live="polite">
@@ -130,7 +130,7 @@ export function PricingPlans() {
           </div>
           {/* TODO(billing): route to Stripe Checkout once billing ships. For now, sign up and remember the choice. */}
           <Button asChild block className="relative mt-auto">
-            <Link href={`/signup?plan=${premiumPlan}`}>Get Premium</Link>
+            <Link href={`/signup?plan=${premiumPlan}`}>Get Pro</Link>
           </Button>
         </GlassCard>
       </div>

@@ -2,7 +2,9 @@
 
 import { redirect } from "next/navigation";
 import { z } from "zod";
+import { isAdmin } from "@/lib/auth/admin";
 import { getSessionProfile } from "@/lib/auth/session";
+import { dailyCheckinLimit, getAppSettings } from "@/lib/settings";
 import { startOfToday } from "@/lib/focus/today";
 import { askLuna, LunaUnavailableError } from "@/lib/luna/client";
 import { contextBlock } from "@/lib/luna/prompt";
@@ -65,19 +67,34 @@ export async function sendCheckIn(input: z.input<typeof SendSchema>): Promise<Se
     };
   }
 
-  // Free plan: one check-in a day (PRD section 7). Follow-up turns in the same check-in don't count.
-  if (!checkinId && profile.plan !== "premium") {
+  // Daily allowance comes from admin settings (PRD section 7 default: free = 1/day, Pro = unlimited).
+  // Admins are never limited. Follow-up turns in the same check-in don't count.
+  const admin = isAdmin(profile, user.email);
+  const settings = await getAppSettings(supabase);
+  if (!settings.lunaEnabled && !admin) {
+    return {
+      ok: false,
+      code: "unavailable",
+      message: "Luna is taking a short break. Please check back soon.",
+    };
+  }
+  const limit = dailyCheckinLimit(settings, profile.plan, admin);
+  if (!checkinId && limit !== null) {
     const { count } = await supabase
       .from("checkins")
       .select("id", { count: "exact", head: true })
       .eq("user_id", user.id)
       .gte("created_at", startOfToday(profile.timezone));
-    if ((count ?? 0) >= 1) {
+    if ((count ?? 0) >= limit) {
       return {
         ok: false,
         code: "limit",
         message:
-          "You've used today's free check-in. Your plan from earlier is still in Focus, and a new check-in opens tomorrow.",
+          limit === 0
+            ? "Check-ins aren't included in your plan right now. Upgrade to Pro to talk with Luna."
+            : profile.plan === "premium"
+              ? `You've reached today's ${limit} check-ins. Your plan is still in Focus, and more open tomorrow.`
+              : `You've used today's free ${limit === 1 ? "check-in" : `${limit} check-ins`}. Your plan from earlier is still in Focus. Upgrade to Pro for more, or come back tomorrow.`,
       };
     }
   }

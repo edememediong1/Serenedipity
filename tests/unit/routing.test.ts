@@ -66,6 +66,24 @@ describe("resolveRedirect", () => {
   });
 });
 
+describe("admin routes", () => {
+  it("require sign-in, then the admin role", () => {
+    expect(go("/admin", false, null)).toBe("/login?next=%2Fadmin");
+    expect(resolveRedirect({ pathname: "/admin/users", search: "", isSignedIn: true, profile: done })).toBe(
+      "/app",
+    );
+    expect(
+      resolveRedirect({
+        pathname: "/admin",
+        search: "",
+        isSignedIn: true,
+        profile: fresh,
+        isAdminUser: true,
+      }),
+    ).toBeNull();
+  });
+});
+
 describe("safeNextPath", () => {
   it("allows only same-origin relative paths", () => {
     expect(safeNextPath("/app?tab=1")).toBe("/app?tab=1");

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { LogOut, Settings, User } from "lucide-react";
+import { BarChart3, LayoutDashboard, LogOut, Settings, User } from "lucide-react";
 import { signOut } from "@/app/(auth)/actions";
 import {
   DropdownMenu,
@@ -32,7 +32,7 @@ export function Avatar({ user, size = 40 }: { user: MenuUser; size?: number }) {
 }
 
 /** Avatar button with Profile, Settings and Sign out. */
-export function UserMenu({ user }: { user: MenuUser }) {
+export function UserMenu({ user, isAdmin = false }: { user: MenuUser; isAdmin?: boolean }) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
@@ -55,10 +55,22 @@ export function UserMenu({ user }: { user: MenuUser }) {
           </Link>
         </DropdownMenuItem>
         <DropdownMenuItem asChild>
+          <Link href="/app/review">
+            <BarChart3 aria-hidden="true" /> Review
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
           <Link href="/app/settings">
             <Settings aria-hidden="true" /> Settings
           </Link>
         </DropdownMenuItem>
+        {isAdmin ? (
+          <DropdownMenuItem asChild>
+            <Link href="/admin">
+              <LayoutDashboard aria-hidden="true" /> Admin dashboard
+            </Link>
+          </DropdownMenuItem>
+        ) : null}
         <DropdownMenuSeparator />
         <DropdownMenuItem
           onSelect={() => {
