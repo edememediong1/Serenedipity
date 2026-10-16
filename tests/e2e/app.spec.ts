@@ -37,7 +37,7 @@ test.describe("app shell and dashboard", () => {
   test("navigation reaches every placeholder page", async ({ page }) => {
     const nav = page.getByRole("navigation", { name: "App" }).filter({ visible: true });
     for (const [label, title] of [
-      ["Check in", "Say how you feel"],
+      ["Check in", "How are you feeling?"],
       ["Focus", "One block at a time"],
       ["Rooms", "Focus together"],
     ] as const) {

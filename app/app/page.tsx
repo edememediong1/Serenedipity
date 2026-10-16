@@ -8,6 +8,7 @@ import { TodayCard } from "@/components/app/today-card";
 import { GlowBackground } from "@/components/brand/glow-background";
 import { Eyebrow } from "@/components/ui/eyebrow";
 import { getSessionProfile } from "@/lib/auth/session";
+import { getTodayStats } from "@/lib/focus/stats";
 import { greeting } from "@/lib/greeting";
 import { MIXES } from "@/lib/seed/mixes";
 
@@ -18,6 +19,11 @@ async function MobileGreeting() {
   return (
     <Eyebrow className="lg:hidden">{greeting(new Date(), profile.timezone, profile.display_name)}</Eyebrow>
   );
+}
+
+async function Today() {
+  const stats = await getTodayStats();
+  return <TodayCard minutes={stats.minutes} blocks={stats.blocks} />;
 }
 
 export default function HomePage() {
@@ -39,7 +45,9 @@ export default function HomePage() {
         <CheckInCard />
         {/* Mobile: Today sits at the end, as in the Home design. Desktop: beside the check-in. */}
         <div className="order-last lg:order-none">
-          <TodayCard />
+          <Suspense fallback={<TodayCard />}>
+            <Today />
+          </Suspense>
         </div>
 
         <section aria-labelledby="states-heading" className="flex flex-col gap-4 lg:col-span-2">

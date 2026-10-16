@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Mic } from "lucide-react";
 import { SignatureOrb } from "@/components/brand/signature-orb";
 import { GlassCard } from "@/components/ui/glass-card";
+import { GUIDE_NAME } from "@/lib/config";
 
 const MOODS = [
   { value: "foggy", label: "Foggy" },
@@ -12,7 +13,7 @@ const MOODS = [
 
 /**
  * The check-in entry point: the orb microphone, the question and mood chips.
- * TODO(check-in): open the voice check-in instead of the placeholder route.
+ * Opens the check-in with Luna; mood chips prefill the first message.
  */
 export function CheckInCard() {
   return (
@@ -20,7 +21,7 @@ export function CheckInCard() {
       <div className="flex items-center gap-4">
         <Link
           href="/app/check-in"
-          aria-label="Start a voice check-in"
+          aria-label={`Start a voice check-in with ${GUIDE_NAME}`}
           className="shrink-0 rounded-pill focus-ring transition-transform duration-300 hover:scale-[1.03] motion-reduce:hover:scale-100"
         >
           <SignatureOrb
@@ -32,7 +33,7 @@ export function CheckInCard() {
         </Link>
         <div className="flex flex-col gap-1">
           <h2 className="text-lg leading-6 font-semibold md:type-h2">How are you feeling?</h2>
-          <p className="text-ink-muted">Talk for 20 seconds. Get a plan for today.</p>
+          <p className="text-ink-muted">Talk to {GUIDE_NAME} for 20 seconds. Get a plan for today.</p>
         </div>
       </div>
       <ul className="flex flex-wrap gap-2" aria-label="Or pick a mood">

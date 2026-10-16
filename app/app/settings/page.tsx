@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { LogOut, Sparkles } from "lucide-react";
 import { Suspense } from "react";
 import { signOut } from "@/app/(auth)/actions";
+import { DeleteCheckins } from "@/components/app/delete-checkins";
 import { SettingsForm } from "@/components/app/settings-form";
 import { GlowBackground } from "@/components/brand/glow-background";
 import { Button } from "@/components/ui/button";
@@ -47,6 +48,10 @@ async function SettingsContent() {
           <p className="type-body-sm text-ink-muted">
             Premium unlocks the full library, the binaural layer and every room.
           </p>
+        </GlassCard>
+        <GlassCard className="flex flex-col gap-4 p-6">
+          <h2 className="type-h2">Check-ins</h2>
+          <DeleteCheckins />
         </GlassCard>
         <GlassCard className="flex flex-col gap-4 p-6">
           <h2 className="type-h2">Account</h2>

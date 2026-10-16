@@ -14,7 +14,7 @@ function walk(dir: string): string[] {
 
 describe("copy rules", () => {
   it("never uses banned words in user-facing source", () => {
-    const files = [...walk(join(process.cwd(), "app")), ...walk(join(process.cwd(), "components"))];
+    const files = ["app", "components", "lib"].flatMap((d) => walk(join(process.cwd(), d)));
     const offenders = files.filter((f) => BANNED.test(readFileSync(f, "utf8")));
     expect(offenders).toEqual([]);
   });

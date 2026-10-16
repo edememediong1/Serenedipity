@@ -5,7 +5,7 @@ import { GlassCard } from "@/components/ui/glass-card";
 
 /**
  * Today's focus minutes and completed blocks.
- * TODO(focus): read from focus_blocks once the timer saves history. Zeros for now.
+ * Values come from focus_blocks (see lib/focus/stats.ts); zeros render as a friendly empty state.
  */
 export function TodayCard({ minutes = 0, blocks = 0 }: { minutes?: number; blocks?: number }) {
   const empty = minutes === 0 && blocks === 0;
@@ -35,7 +35,11 @@ export function TodayCard({ minutes = 0, blocks = 0 }: { minutes?: number; block
       </div>
       {empty ? (
         <p className="text-ink-muted">Nothing yet today, and that&apos;s fine. One block is a good start.</p>
-      ) : null}
+      ) : (
+        <p className="text-ink-muted">
+          {blocks} {blocks === 1 ? "block" : "blocks"} done. Nice work.
+        </p>
+      )}
       <Link
         href="/app/focus"
         className="mt-auto inline-flex min-h-11 w-fit items-center gap-2 rounded-sm type-body-sm font-semibold text-blue-soft focus-ring hover:underline"
