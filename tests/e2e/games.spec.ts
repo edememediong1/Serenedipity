@@ -26,7 +26,10 @@ test.describe("games", () => {
     // Zen tiles: some tile can move.
     await page.goto("/app/games/zen-tiles");
     // Tiles unlock once the puzzle is shuffled in the browser.
-    const movable = page.getByRole("button", { name: /can move/ }).and(page.locator(":enabled")).first();
+    const movable = page
+      .getByRole("button", { name: /can move/ })
+      .and(page.locator(":enabled"))
+      .first();
     await expect(movable).toBeVisible({ timeout: 15_000 });
     await movable.click();
     await expect(page.getByRole("status")).toContainText(/Tap a tile|In order again/);
