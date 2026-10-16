@@ -22,11 +22,11 @@ const FAQS = [
   },
   {
     q: "What's included for free?",
-    a: "A rotating selection of music, the Pomodoro timer, one check-in a day and one trial focus room. Premium unlocks the full library, the binaural layer, unlimited check-ins and all rooms.",
+    a: "A rotating selection of music, the Pomodoro timer, one check-in a day and one trial focus room. Pro unlocks the full library, the binaural layer, unlimited check-ins, weekly reflections and all rooms.",
   },
   {
-    q: "Can I cancel Premium?",
-    a: "Yes, anytime. If you cancel, Premium stays on until the end of the period you've already paid for.",
+    q: "Can I cancel Pro?",
+    a: "Yes, anytime. If you cancel, Pro stays on until the end of the period you've already paid for.",
   },
   {
     q: "What happens to what I say in a check-in?",

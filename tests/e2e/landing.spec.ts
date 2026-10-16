@@ -22,7 +22,7 @@ test.describe("landing page", () => {
     await expect(pricing.getByText("$59.99")).toBeVisible();
     await pricing.getByRole("radio", { name: "Monthly" }).click();
     await expect(pricing.getByText("$7.99")).toBeVisible();
-    await expect(pricing.getByRole("link", { name: "Get Premium" })).toHaveAttribute(
+    await expect(pricing.getByRole("link", { name: "Get Pro" })).toHaveAttribute(
       "href",
       "/signup?plan=premium-monthly",
     );

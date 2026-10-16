@@ -2,13 +2,15 @@ import "server-only";
 import Anthropic from "@anthropic-ai/sdk";
 import { betaZodOutputFormat } from "@anthropic-ai/sdk/helpers/beta/zod";
 import { LUNA_SYSTEM_PROMPT } from "./prompt";
-import { mockLunaTurn, mockStuck } from "./mock";
+import { mockLunaTurn, mockReflection, mockStuck } from "./mock";
 import {
   LunaTurnSchema,
+  ReflectionSchema,
   sanitizeTurn,
   StuckSchema,
   type LunaMessage,
   type LunaTurn,
+  type Reflection,
   type StuckTurn,
 } from "./schema";
 
@@ -115,5 +117,40 @@ export async function askLunaWhenStuck(taskTitle: string, note: string): Promise
     reply: out.reply.trim().slice(0, 600),
     next_step: out.next_step.trim().slice(0, 200) || "Write one rough sentence to get started",
     estimate_minutes: Math.min(25, Math.max(5, Math.round(out.estimate_minutes / 5) * 5 || 10)),
+  };
+}
+
+const REFLECTION_SYSTEM = `${LUNA_SYSTEM_PROMPT}
+
+Right now you are writing the person's weekly reflection from aggregate numbers only (focus minutes, laps, tasks planned and done per day, techniques, block outcomes). You never see what they said in check-ins. Be warm, specific to the numbers, and brief: a one-line headline, two or three things that went well, one or two gentle things to improve, and one small, concrete suggestion for next week. Describe what happened; never promise outcomes or use percentages about productivity gains. If the week was empty or hard, be kind and suggest the smallest possible start.`;
+
+/** Weekly reflection from aggregate stats. */
+export async function askLunaForReflection(statsJson: string): Promise<Reflection> {
+  const mode = lunaMode();
+  if (mode === "mock") return mockReflection();
+  if (mode === "off") throw new LunaUnavailableError();
+  const response = await getClient().beta.messages.parse({
+    model: MODEL,
+    max_tokens: 16000,
+    betas: ["server-side-fallback-2026-07-01"],
+    fallbacks: "default",
+    output_config: { effort: "low", format: betaZodOutputFormat(ReflectionSchema) },
+    system: [{ type: "text", text: REFLECTION_SYSTEM, cache_control: { type: "ephemeral" } }],
+    messages: [{ role: "user", content: `Here is my week:\n${statsJson}` }],
+  });
+  if (response.stop_reason === "refusal" || !response.parsed_output)
+    throw new Error("No reflection returned");
+  const r = response.parsed_output;
+  return {
+    headline: r.headline.trim().slice(0, 160),
+    went_well: r.went_well
+      .map((x) => x.trim())
+      .filter(Boolean)
+      .slice(0, 3),
+    to_improve: r.to_improve
+      .map((x) => x.trim())
+      .filter(Boolean)
+      .slice(0, 2),
+    next_week: r.next_week.trim().slice(0, 300),
   };
 }

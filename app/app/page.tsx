@@ -5,6 +5,7 @@ import { CheckInCard } from "@/components/app/check-in-card";
 import { MixRow } from "@/components/app/mix-row";
 import { STATES, StateCard } from "@/components/app/state-cards";
 import { TodayCard } from "@/components/app/today-card";
+import { UnfinishedNudge } from "@/components/review/unfinished-nudge";
 import { GlowBackground } from "@/components/brand/glow-background";
 import { Eyebrow } from "@/components/ui/eyebrow";
 import { getSessionProfile } from "@/lib/auth/session";
@@ -42,6 +43,11 @@ export default function HomePage() {
           </h1>
         </header>
 
+        <div className="empty:hidden lg:col-span-2">
+          <Suspense fallback={null}>
+            <UnfinishedNudge />
+          </Suspense>
+        </div>
         <CheckInCard />
         {/* Mobile: Today sits at the end, as in the Home design. Desktop: beside the check-in. */}
         <div className="order-last lg:order-none">

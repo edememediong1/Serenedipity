@@ -13,6 +13,8 @@ type Input = {
   search: string;
   isSignedIn: boolean;
   profile: RoutingProfile | null;
+  /** Admin by role or ADMIN_EMAILS. Admins skip onboarding gates for /admin. */
+  isAdminUser?: boolean;
 };
 
 const startsWithSegment = (pathname: string, base: string) =>
@@ -21,6 +23,7 @@ const startsWithSegment = (pathname: string, base: string) =>
 export const isAppPath = (p: string) => startsWithSegment(p, "/app");
 export const isOnboardingPath = (p: string) => startsWithSegment(p, "/onboarding");
 export const isAuthScreen = (p: string) => p === "/login" || p === "/signup";
+export const isAdminPath = (p: string) => startsWithSegment(p, "/admin");
 
 /** True when the user answered the age question with "under 18". */
 export function isUnderage(profile: RoutingProfile | null) {
@@ -33,13 +36,22 @@ export function isUnderage(profile: RoutingProfile | null) {
  * - Signed in, onboarding unfinished: always land on the onboarding step they reached.
  * - Signed in, onboarding finished: /login, /signup and /onboarding go to /app (or `next`).
  */
-export function resolveRedirect({ pathname, search, isSignedIn, profile }: Input): string | null {
-  const isProtected = isAppPath(pathname) || isOnboardingPath(pathname);
+export function resolveRedirect({
+  pathname,
+  search,
+  isSignedIn,
+  profile,
+  isAdminUser = false,
+}: Input): string | null {
+  const isProtected = isAppPath(pathname) || isOnboardingPath(pathname) || isAdminPath(pathname);
 
   if (!isSignedIn) {
     if (!isProtected) return null;
     return `/login?next=${encodeURIComponent(`${pathname}${search}`)}`;
   }
+
+  // The admin area: admins only (everyone else goes to the app), regardless of onboarding.
+  if (isAdminPath(pathname)) return isAdminUser ? null : "/app";
 
   const onboarded = !!profile?.onboarding_completed_at;
 

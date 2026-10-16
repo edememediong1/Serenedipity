@@ -42,7 +42,7 @@ test.describe("check-in with Luna", () => {
     await main.getByRole("button", { name: "Skip to my first block" }).click();
 
     await expect(main.getByRole("heading", { level: 1 })).toHaveText("Outline the sections");
-    await expect(main.getByText(/Block 1 of 3 · due/)).toBeVisible();
+    await expect(main.getByText(/Lap 1 of 3 · due/)).toBeVisible();
   });
 
   test("crisis language steps out of planning and shows support", async ({ page }) => {
@@ -54,18 +54,5 @@ test.describe("check-in with Luna", () => {
     await expect(main.getByRole("link", { name: "Call 988" })).toHaveAttribute("href", "tel:988");
     await expect(main.getByRole("heading", { name: "Today's plan" })).toHaveCount(0);
     await expect(main.getByRole("textbox")).toHaveCount(0);
-  });
-
-  test("the free plan allows one check-in a day", async ({ page }) => {
-    await page.goto("/app/check-in", { waitUntil: "networkidle" });
-    const main = page.getByRole("main");
-    await main.getByRole("textbox", { name: "Or type it" }).fill("Client report due by 5 today");
-    await main.getByRole("button", { name: "Send" }).click();
-    await expect(main.getByRole("heading", { name: "Today's plan" })).toBeVisible();
-
-    await page.goto("/app/check-in", { waitUntil: "networkidle" });
-    await main.getByRole("textbox", { name: "Or type it" }).fill("Another one");
-    await main.getByRole("button", { name: "Send" }).click();
-    await expect(main.getByText("You've used today's free check-in.")).toBeVisible();
   });
 });

@@ -109,7 +109,8 @@ test.describe("onboarding", () => {
   });
 
   test("every step has no detectable accessibility violations", async ({ page }) => {
-    const scan = async () => {
+    const scan = async (heading: RegExp) => {
+      await expect(page.getByRole("heading", { level: 1 })).toHaveText(heading);
       // Let the step's fade-in finish so contrast is measured at full opacity.
       await page.waitForFunction(() =>
         document
@@ -120,21 +121,18 @@ test.describe("onboarding", () => {
       expect(results.violations.map((v) => `${page.url()} ${v.id}: ${v.nodes.length}`)).toEqual([]);
     };
     await signInAs(page);
-    await scan();
+    await scan(/set up your space/);
     await page.getByRole("button", { name: "Continue" }).click();
-    await expect(page).toHaveURL(/\/age$/);
-    await scan();
+    await scan(/18 or older/);
     await page.getByRole("radio", { name: "Yes, I'm 18 or older" }).click();
     await page.getByRole("button", { name: "Continue" }).click();
-    for (const next of ["rhythm", "sound", "guide"]) {
-      await scan();
+    for (const heading of [/brings you here/, /Find your rhythm/, /Choose your sound/]) {
+      await scan(heading);
       await page.getByRole("button", { name: "Skip for now" }).click();
-      await expect(page).toHaveURL(new RegExp(`/${next}$`));
     }
-    await scan();
+    await scan(/Meet your focus guide/);
     await page.getByRole("checkbox").check();
     await page.getByRole("button", { name: "Continue" }).click();
-    await expect(page).toHaveURL(/\/done$/);
-    await scan();
+    await scan(/Your space is ready/);
   });
 });

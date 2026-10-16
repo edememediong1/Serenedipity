@@ -13,6 +13,8 @@ export type TimerSettings = {
   longBreakMinutes: number;
   /** A long break replaces the short break after this many completed focus blocks. */
   longBreakEvery: number;
+  /** Flowtime: focus counts up to focusMinutes (a cap); the next break is a fifth of the time focused. */
+  openEnded?: boolean;
 };
 
 export type TimerState = {
@@ -32,6 +34,7 @@ export const DEFAULT_SETTINGS: TimerSettings = {
   shortBreakMinutes: 5,
   longBreakMinutes: 15,
   longBreakEvery: 4,
+  openEnded: false,
 };
 
 const MINUTE = 60_000;
@@ -106,9 +109,34 @@ export function nextKind(kind: BlockKind, completedFocusAfter: number, settings:
  * Moves to the next block. `countFocus` is false when a focus block is skipped without being done,
  * so skipping doesn't earn long breaks.
  */
-export function advance(state: TimerState, settings: TimerSettings, countFocus = true): TimerState {
+export function advance(
+  state: TimerState,
+  settings: TimerSettings,
+  countFocus = true,
+  now = Date.now(),
+): TimerState {
   const completed = state.kind === "focus" && countFocus ? state.completedFocus + 1 : state.completedFocus;
-  return createTimer(settings, nextKind(state.kind, completed, settings), completed);
+  const next = createTimer(settings, nextKind(state.kind, completed, settings), completed);
+  if (settings.openEnded && state.kind === "focus" && next.kind !== "focus") {
+    return { ...next, durationMs: flowBreakMs(elapsedMs(state, now)) };
+  }
+  return next;
+}
+
+/** Flowtime break: a fifth of the focus time, rounded to the minute, between 5 and 30 minutes. */
+export function flowBreakMs(focusedMs: number) {
+  const minutes = Math.min(30, Math.max(5, Math.round(focusedMs / MINUTE / 5)));
+  return minutes * MINUTE;
+}
+
+/** True once the session's laps are all done. */
+export function sessionComplete(state: TimerState, laps: number) {
+  return state.completedFocus >= laps;
+}
+
+/** The lap in progress (1-based), capped at the total. */
+export function currentLap(state: TimerState, laps: number) {
+  return Math.min(laps, state.completedFocus + (state.kind === "focus" ? 1 : 0));
 }
 
 export function formatClock(ms: number) {

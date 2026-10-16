@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { isActive, PRIMARY_NAV, SETTINGS_NAV, type NavItem } from "./nav-items";
+import { isActive, PRIMARY_NAV, REVIEW_NAV, SETTINGS_NAV, type NavItem } from "./nav-items";
 
 function SidebarLink({ item, pathname }: { item: NavItem; pathname: string }) {
   const active = isActive(item, pathname);
@@ -31,6 +31,7 @@ export function SidebarNav() {
       {PRIMARY_NAV.map((item) => (
         <SidebarLink key={item.href} item={item} pathname={pathname} />
       ))}
+      <SidebarLink item={REVIEW_NAV} pathname={pathname} />
       <hr className="my-3 border-line" />
       <SidebarLink item={SETTINGS_NAV} pathname={pathname} />
     </nav>

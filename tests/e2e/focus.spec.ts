@@ -12,7 +12,11 @@ test.describe("focus timer", () => {
     await page.clock.install();
     await page.goto("/app/focus", { waitUntil: "networkidle" });
     const main = page.getByRole("main");
-    await main.getByRole("textbox", { name: /What are you working on/ }).fill("Write the intro");
+    const what = main.getByRole("textbox", { name: /What are you working on/ });
+    await expect(async () => {
+      await what.fill("Write the intro");
+      await expect(what).toHaveValue("Write the intro", { timeout: 500 });
+    }).toPass();
     await main.getByRole("button", { name: "Start focus" }).click();
     await expect(main.getByRole("button", { name: "Pause" })).toBeVisible();
 
@@ -30,7 +34,7 @@ test.describe("focus timer", () => {
     await page.clock.fastForward(24 * 60_000 + 1000);
     await expect(main.getByText("Block finished. How did it go?")).toBeVisible();
     await main.getByRole("button", { name: "Done" }).first().click();
-    await expect(main.getByText("1 block done. Nice work.")).toBeVisible();
+    await expect(main.getByText("1 lap done. Nice work.")).toBeVisible();
     await expect(main.getByRole("heading", { level: 1 })).toContainText("Breathe, stretch, look away");
 
     await page.goto("/app", { waitUntil: "networkidle" });
@@ -42,7 +46,11 @@ test.describe("focus timer", () => {
   test("I'm stuck offers a smaller next step from Luna", async ({ page }) => {
     await page.goto("/app/focus", { waitUntil: "networkidle" });
     const main = page.getByRole("main");
-    await main.getByRole("textbox", { name: /What are you working on/ }).fill("Budget review");
+    const what = main.getByRole("textbox", { name: /What are you working on/ });
+    await expect(async () => {
+      await what.fill("Budget review");
+      await expect(what).toHaveValue("Budget review", { timeout: 500 });
+    }).toPass();
     await main.getByRole("button", { name: "Start focus" }).click();
     await main.getByRole("button", { name: "I'm stuck" }).click();
     await main.getByRole("button", { name: "Ask Luna" }).click();

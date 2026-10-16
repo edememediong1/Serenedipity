@@ -7,10 +7,14 @@ import { askLunaWhenStuck, LunaUnavailableError } from "@/lib/luna/client";
 import { screenMessage } from "@/lib/luna/safety";
 import type { StuckTurn } from "@/lib/luna/schema";
 
+const TECHNIQUE = z.enum(["pomodoro", "deep-work", "ultradian", "52-17", "flowtime", "custom"]);
+
 const StartSchema = z.object({
   taskId: z.uuid().nullable(),
   taskTitle: z.string().trim().max(200).nullable(),
   plannedMinutes: z.number().int().min(1).max(240),
+  technique: TECHNIQUE.optional(),
+  lap: z.number().int().min(1).max(50).optional(),
 });
 
 /** Records the start of a focus block. Returns its id so the timer can finish it later. */
@@ -27,6 +31,8 @@ export async function startFocusBlock(
       task_id: parsed.data.taskId,
       task_title: parsed.data.taskTitle || null,
       planned_minutes: parsed.data.plannedMinutes,
+      technique: parsed.data.technique ?? null,
+      lap: parsed.data.lap ?? null,
     })
     .select("id")
     .single();
@@ -68,7 +74,7 @@ export async function finishFocusBlock(input: z.input<typeof FinishSchema>) {
   if (block?.task_id && parsed.data.outcome === "done") {
     const { data: task } = await supabase
       .from("tasks")
-      .update({ status: "done" })
+      .update({ status: "done", completed_at: new Date().toISOString() })
       .eq("id", block.task_id)
       .select("plan_id")
       .single();
@@ -111,4 +117,36 @@ export async function skipTask(taskId: string) {
   if (!z.uuid().safeParse(taskId).success) return;
   const { supabase } = await getSessionProfile();
   await supabase.from("tasks").update({ status: "skipped" }).eq("id", taskId);
+}
+
+const PrefsSchema = z.object({
+  technique: TECHNIQUE,
+  laps: z.number().int().min(1).max(12),
+  focusMinutes: z.number().int().min(5).max(180),
+  shortBreakMinutes: z.number().int().min(1).max(60),
+  longBreakMinutes: z.number().int().min(5).max(60),
+  longBreakEvery: z.number().int().min(2).max(8),
+});
+
+/** Remembers the chosen technique, laps and custom lengths for next time. */
+export async function saveFocusPreferences(input: z.input<typeof PrefsSchema>) {
+  const parsed = PrefsSchema.safeParse(input);
+  if (!parsed.success) return;
+  const { user, supabase } = await getSessionProfile();
+  const p = parsed.data;
+  const update: {
+    focus_technique: typeof p.technique;
+    focus_laps: number;
+    default_focus_minutes?: number;
+    default_break_minutes?: number;
+    long_break_minutes?: number;
+    long_break_every?: number;
+  } = { focus_technique: p.technique, focus_laps: p.laps };
+  if (p.technique === "custom") {
+    update.default_focus_minutes = p.focusMinutes;
+    update.default_break_minutes = p.shortBreakMinutes;
+    update.long_break_minutes = p.longBreakMinutes;
+    update.long_break_every = p.longBreakEvery;
+  }
+  await supabase.from("profiles").update(update).eq("id", user.id);
 }
