@@ -152,6 +152,234 @@ export type Database = {
           },
         ];
       };
+      group_comments: {
+        Row: {
+          author_id: string;
+          body: string;
+          created_at: string;
+          group_id: string;
+          held_reason: string | null;
+          id: string;
+          parent_id: string | null;
+          post_id: string;
+          status: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          author_id: string;
+          body: string;
+          created_at?: string;
+          group_id: string;
+          held_reason?: string | null;
+          id?: string;
+          parent_id?: string | null;
+          post_id: string;
+          status?: string;
+        };
+        Update: {
+          author_id?: string;
+          body?: string;
+          created_at?: string;
+          group_id?: string;
+          held_reason?: string | null;
+          id?: string;
+          parent_id?: string | null;
+          post_id?: string;
+          status?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "group_comments_group_id_fkey";
+            columns: ["group_id"];
+            isOneToOne: false;
+            referencedRelation: "groups";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "group_comments_parent_id_fkey";
+            columns: ["parent_id"];
+            isOneToOne: false;
+            referencedRelation: "group_comments";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "group_comments_post_id_fkey";
+            columns: ["post_id"];
+            isOneToOne: false;
+            referencedRelation: "group_posts";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      group_members: {
+        Row: {
+          group_id: string;
+          joined_at: string;
+          muted_until: string | null;
+          role: string;
+          status: string;
+          user_id: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          group_id: string;
+          joined_at?: string;
+          muted_until?: string | null;
+          role?: string;
+          status?: string;
+          user_id: string;
+        };
+        Update: {
+          group_id?: string;
+          joined_at?: string;
+          muted_until?: string | null;
+          role?: string;
+          status?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "group_members_group_id_fkey";
+            columns: ["group_id"];
+            isOneToOne: false;
+            referencedRelation: "groups";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      group_posts: {
+        Row: {
+          author_id: string;
+          body: string;
+          comment_count: number;
+          created_at: string;
+          group_id: string;
+          held_reason: string | null;
+          id: string;
+          kind: string;
+          link_url: string | null;
+          pinned: boolean;
+          solved: boolean;
+          status: string;
+          win: Json | null;
+        };
+        ComputedFields: never;
+        Insert: {
+          author_id: string;
+          body: string;
+          comment_count?: number;
+          created_at?: string;
+          group_id: string;
+          held_reason?: string | null;
+          id?: string;
+          kind?: string;
+          link_url?: string | null;
+          pinned?: boolean;
+          solved?: boolean;
+          status?: string;
+          win?: Json | null;
+        };
+        Update: {
+          author_id?: string;
+          body?: string;
+          comment_count?: number;
+          created_at?: string;
+          group_id?: string;
+          held_reason?: string | null;
+          id?: string;
+          kind?: string;
+          link_url?: string | null;
+          pinned?: boolean;
+          solved?: boolean;
+          status?: string;
+          win?: Json | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "group_posts_group_id_fkey";
+            columns: ["group_id"];
+            isOneToOne: false;
+            referencedRelation: "groups";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      group_reactions: {
+        Row: {
+          created_at: string;
+          post_id: string;
+          reaction: string;
+          user_id: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          created_at?: string;
+          post_id: string;
+          reaction: string;
+          user_id: string;
+        };
+        Update: {
+          created_at?: string;
+          post_id?: string;
+          reaction?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "group_reactions_post_id_fkey";
+            columns: ["post_id"];
+            isOneToOne: false;
+            referencedRelation: "group_posts";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      groups: {
+        Row: {
+          created_at: string;
+          description: string | null;
+          id: string;
+          invite_code: string;
+          member_count: number;
+          name: string;
+          owner_id: string | null;
+          rules: string | null;
+          slug: string;
+          status: string;
+          topic: string;
+          visibility: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          created_at?: string;
+          description?: string | null;
+          id?: string;
+          invite_code: string;
+          member_count?: number;
+          name: string;
+          owner_id?: string | null;
+          rules?: string | null;
+          slug: string;
+          status?: string;
+          topic?: string;
+          visibility?: string;
+        };
+        Update: {
+          created_at?: string;
+          description?: string | null;
+          id?: string;
+          invite_code?: string;
+          member_count?: number;
+          name?: string;
+          owner_id?: string | null;
+          rules?: string | null;
+          slug?: string;
+          status?: string;
+          topic?: string;
+          visibility?: string;
+        };
+        Relationships: [];
+      };
       plans: {
         Row: {
           checkin_id: string | null;
@@ -188,6 +416,83 @@ export type Database = {
           },
         ];
       };
+      playlist_tracks: {
+        Row: {
+          playlist_id: string;
+          position: number;
+          track_id: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          playlist_id: string;
+          position?: number;
+          track_id: string;
+        };
+        Update: {
+          playlist_id?: string;
+          position?: number;
+          track_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "playlist_tracks_playlist_id_fkey";
+            columns: ["playlist_id"];
+            isOneToOne: false;
+            referencedRelation: "playlists";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "playlist_tracks_track_id_fkey";
+            columns: ["track_id"];
+            isOneToOne: false;
+            referencedRelation: "tracks";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      playlists: {
+        Row: {
+          category: string;
+          created_at: string;
+          description: string | null;
+          featured: boolean;
+          id: string;
+          is_premium: boolean;
+          position: number;
+          slug: string;
+          state: string;
+          status: string;
+          title: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          category: string;
+          created_at?: string;
+          description?: string | null;
+          featured?: boolean;
+          id?: string;
+          is_premium?: boolean;
+          position?: number;
+          slug: string;
+          state: string;
+          status?: string;
+          title: string;
+        };
+        Update: {
+          category?: string;
+          created_at?: string;
+          description?: string | null;
+          featured?: boolean;
+          id?: string;
+          is_premium?: boolean;
+          position?: number;
+          slug?: string;
+          state?: string;
+          status?: string;
+          title?: string;
+        };
+        Relationships: [];
+      };
       profiles: {
         Row: {
           age_confirmed: boolean;
@@ -210,6 +515,7 @@ export type Database = {
           onboarding_step: number;
           plan: string;
           role: string;
+          streak_rest_days: number;
           timezone: string | null;
           updated_at: string;
           work_style: string | null;
@@ -236,6 +542,7 @@ export type Database = {
           onboarding_step?: number;
           plan?: string;
           role?: string;
+          streak_rest_days?: number;
           timezone?: string | null;
           updated_at?: string;
           work_style?: string | null;
@@ -261,6 +568,7 @@ export type Database = {
           onboarding_step?: number;
           plan?: string;
           role?: string;
+          streak_rest_days?: number;
           timezone?: string | null;
           updated_at?: string;
           work_style?: string | null;
@@ -319,9 +627,12 @@ export type Database = {
       };
       reports: {
         Row: {
+          comment_id: string | null;
           created_at: string;
           details: string | null;
+          group_id: string | null;
           id: string;
+          post_id: string | null;
           reason: string;
           reported_user_id: string;
           reporter_id: string;
@@ -330,9 +641,12 @@ export type Database = {
         };
         ComputedFields: never;
         Insert: {
+          comment_id?: string | null;
           created_at?: string;
           details?: string | null;
+          group_id?: string | null;
           id?: string;
+          post_id?: string | null;
           reason: string;
           reported_user_id: string;
           reporter_id: string;
@@ -340,9 +654,12 @@ export type Database = {
           status?: string;
         };
         Update: {
+          comment_id?: string | null;
           created_at?: string;
           details?: string | null;
+          group_id?: string | null;
           id?: string;
+          post_id?: string | null;
           reason?: string;
           reported_user_id?: string;
           reporter_id?: string;
@@ -351,7 +668,61 @@ export type Database = {
         };
         Relationships: [
           {
+            foreignKeyName: "reports_comment_id_fkey";
+            columns: ["comment_id"];
+            isOneToOne: false;
+            referencedRelation: "group_comments";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "reports_group_id_fkey";
+            columns: ["group_id"];
+            isOneToOne: false;
+            referencedRelation: "groups";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "reports_post_id_fkey";
+            columns: ["post_id"];
+            isOneToOne: false;
+            referencedRelation: "group_posts";
+            referencedColumns: ["id"];
+          },
+          {
             foreignKeyName: "reports_room_id_fkey";
+            columns: ["room_id"];
+            isOneToOne: false;
+            referencedRelation: "rooms";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      room_attendance: {
+        Row: {
+          joined_at: string;
+          last_seen_at: string;
+          room_id: string;
+          session_start: string;
+          user_id: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          joined_at?: string;
+          last_seen_at?: string;
+          room_id: string;
+          session_start: string;
+          user_id: string;
+        };
+        Update: {
+          joined_at?: string;
+          last_seen_at?: string;
+          room_id?: string;
+          session_start?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "room_attendance_room_id_fkey";
             columns: ["room_id"];
             isOneToOne: false;
             referencedRelation: "rooms";
@@ -438,6 +809,7 @@ export type Database = {
           created_at: string;
           description: string | null;
           focus_minutes: number;
+          group_id: string | null;
           host_id: string | null;
           id: string;
           invite_code: string | null;
@@ -456,6 +828,7 @@ export type Database = {
           created_at?: string;
           description?: string | null;
           focus_minutes?: number;
+          group_id?: string | null;
           host_id?: string | null;
           id?: string;
           invite_code?: string | null;
@@ -473,6 +846,7 @@ export type Database = {
           created_at?: string;
           description?: string | null;
           focus_minutes?: number;
+          group_id?: string | null;
           host_id?: string | null;
           id?: string;
           invite_code?: string | null;
@@ -485,6 +859,13 @@ export type Database = {
           visibility?: string;
         };
         Relationships: [
+          {
+            foreignKeyName: "rooms_group_id_fkey";
+            columns: ["group_id"];
+            isOneToOne: false;
+            referencedRelation: "groups";
+            referencedColumns: ["id"];
+          },
           {
             foreignKeyName: "rooms_track_id_fkey";
             columns: ["track_id"];
@@ -706,6 +1087,8 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
+      group_role: { Args: { p_group: string }; Returns: string };
+      is_group_member: { Args: { p_group: string }; Returns: boolean };
       is_room_member: { Args: { p_room: string }; Returns: boolean };
       rate_limit_hit: {
         Args: { p_bucket: string; p_key_hash: string; p_max?: number; p_window_seconds?: number };

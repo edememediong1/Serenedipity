@@ -1,5 +1,6 @@
 import {
   BarChart3,
+  UsersRound,
   Clock,
   Gamepad2,
   Headphones,
@@ -30,6 +31,9 @@ export const REVIEW_NAV: NavItem = { href: "/app/review", label: "Review", icon:
 
 /** Calm games for breaks. Sidebar on desktop; account menu and break screens on mobile. */
 export const GAMES_NAV: NavItem = { href: "/app/games", label: "Games", icon: Gamepad2 };
+
+/** Study groups. Sidebar on desktop; account menu and the Rooms page on mobile. */
+export const GROUPS_NAV: NavItem = { href: "/app/groups", label: "Groups", icon: UsersRound };
 
 export const SETTINGS_NAV: NavItem = { href: "/app/settings", label: "Settings", icon: Settings };
 

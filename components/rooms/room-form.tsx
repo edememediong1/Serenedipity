@@ -60,7 +60,7 @@ export function RoomForm({
 }: {
   action: (input: RoomInputValue) => Promise<CreateRoomResult>;
   tracks: { id: string; title: string }[];
-  mode: "private" | "public";
+  mode: "private" | "public" | "group";
 }) {
   const router = useRouter();
   const [title, setTitle] = useState("");
@@ -70,7 +70,7 @@ export function RoomForm({
   const [session, setSession] = useState("50");
   const [focus, setFocus] = useState("25");
   const [brk, setBrk] = useState("5");
-  const [capacity, setCapacity] = useState(mode === "public" ? "20" : "8");
+  const [capacity, setCapacity] = useState(mode === "public" ? "20" : mode === "group" ? "10" : "8");
   const [track, setTrack] = useState(tracks[0]?.id ?? "");
   const [message, setMessage] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -103,7 +103,7 @@ export function RoomForm({
         setMessage(res.message);
         return;
       }
-      if (mode === "private") router.push(`/app/rooms/${res.id}`);
+      if (mode === "private" || mode === "group") router.push(`/app/rooms/${res.id}`);
       else {
         setMessage("Room scheduled.");
         setTitle("");
@@ -184,7 +184,12 @@ export function RoomForm({
           label="Capacity"
           value={capacity}
           onChange={setCapacity}
-          options={(mode === "public" ? [10, 20, 30, 50] : [2, 4, 6, 8, 12]).map((n) => ({
+          options={(mode === "public"
+            ? [10, 20, 30, 50]
+            : mode === "group"
+              ? [6, 10, 20, 30]
+              : [2, 4, 6, 8, 12]
+          ).map((n) => ({
             value: String(n),
             label: `${n} people`,
           }))}

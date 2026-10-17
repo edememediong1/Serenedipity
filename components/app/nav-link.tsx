@@ -4,7 +4,15 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Suspense } from "react";
 import { cn } from "@/lib/utils";
-import { isActive, PRIMARY_NAV, REVIEW_NAV, GAMES_NAV, SETTINGS_NAV, type NavItem } from "./nav-items";
+import {
+  isActive,
+  PRIMARY_NAV,
+  REVIEW_NAV,
+  GAMES_NAV,
+  GROUPS_NAV,
+  SETTINGS_NAV,
+  type NavItem,
+} from "./nav-items";
 
 function SidebarLink({ item, pathname }: { item: NavItem; pathname: string }) {
   const active = isActive(item, pathname);
@@ -48,6 +56,7 @@ function SidebarNavView({ pathname }: { pathname: string }) {
       {PRIMARY_NAV.map((item) => (
         <SidebarLink key={item.href} item={item} pathname={pathname} />
       ))}
+      <SidebarLink item={GROUPS_NAV} pathname={pathname} />
       <SidebarLink item={REVIEW_NAV} pathname={pathname} />
       <SidebarLink item={GAMES_NAV} pathname={pathname} />
       <hr className="my-3 border-line" />

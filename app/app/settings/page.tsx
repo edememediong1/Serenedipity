@@ -6,6 +6,7 @@ import { Suspense } from "react";
 import { signOut } from "@/app/(auth)/actions";
 import { DeleteCheckins } from "@/components/app/delete-checkins";
 import { SettingsForm } from "@/components/app/settings-form";
+import { StreakSettings } from "@/components/streaks/streak-settings";
 import { GlowBackground } from "@/components/brand/glow-background";
 import { Button } from "@/components/ui/button";
 import { Eyebrow } from "@/components/ui/eyebrow";
@@ -36,6 +37,10 @@ async function SettingsContent() {
       />
       <div className="flex flex-col gap-6">
         <PlanCard />
+        <GlassCard id="streaks" className="flex scroll-mt-24 flex-col gap-3 p-6">
+          <h2 className="type-h2">Streaks</h2>
+          <StreakSettings restDays={profile.streak_rest_days} />
+        </GlassCard>
         <GlassCard className="flex flex-col gap-4 p-6">
           <h2 className="type-h2">Check-ins</h2>
           <DeleteCheckins />

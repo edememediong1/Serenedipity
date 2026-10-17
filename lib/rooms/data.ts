@@ -16,7 +16,7 @@ export type RoomView = Omit<RoomRow, "invite_code"> & {
 };
 
 const ROOM_COLUMNS =
-  "id, title, description, visibility, invite_code, host_id, schedule, starts_at, session_minutes, focus_minutes, break_minutes, capacity, track_id, status, created_at, track:tracks(id, title, file_url, duration_seconds)";
+  "id, title, description, visibility, invite_code, host_id, schedule, starts_at, session_minutes, focus_minutes, break_minutes, capacity, track_id, status, created_at, group_id, track:tracks(id, title, file_url, duration_seconds)";
 
 /**
  * Live headcounts. Participant rows are only visible to members (RLS), so counts are read with the

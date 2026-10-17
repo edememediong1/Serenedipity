@@ -78,17 +78,19 @@ All variables are listed with comments in [`.env.example`](.env.example).
 | `/auth/check-email`, `/auth/error` | Post-submit and friendly error screens |
 | `/onboarding/[step]` | welcome, age, goals, rhythm, sound, guide, done; `/onboarding/not-available` for under 18 |
 | `/app` | Home dashboard (the Listen tab) |
-| `/app/listen` | Coming-soon placeholder |
+| `/app/listen` | Music library: playlists by state (Focus, Calm, Clear; `?state=` preselects) and every track |
 | `/app/rooms` | Focus rooms: live and upcoming team rooms, your private rooms; `/app/rooms/new` (Pro) to host |
 | `/app/rooms/[id]` | A room: shared timer, synced music, people, break chat, games on breaks, mic/camera, report, leave |
 | `/app/rooms/join/[code]` | Invite link for a private room |
+| `/app/groups` | Study groups: yours and Discover (search, topics); `/app/groups/new` (Pro) to start one |
+| `/app/groups/[slug]` | A group: Feed, Rooms, Members, About and (moderators) Moderation tabs; `/app/groups/join/[code]` invite links |
 | `/app/games` | Break games: Breathing bubble, Memory match, Zen tiles, Word of the day (`/app/games/[game]`) |
 | `/app/check-in` | Check-in with Luna (voice or text), plan, reset |
 | `/app/focus` | Timer: techniques (Pomodoro, Deep work, Ultradian, 52/17, Flowtime, Custom), laps |
 | `/app/review` | Day and week review: tasks, timeline, achievement rates, insights, Luna reflection (Pro) |
 | `/app/upgrade` | Pro plan checkout (Stripe) |
 | `/app/settings` | Name, onboarding answers, plan and billing, delete check-ins, sign out |
-| `/admin` | Admin: overview, users (plan/role), waitlist + CSV, focus rooms, safety reports, limits & settings |
+| `/admin` | Admin: overview, users (plan/role), waitlist + CSV, focus rooms, study groups, safety reports, limits & settings |
 | `/design` | Dev-only design gallery |
 
 Routing rules live in `lib/auth/routing.ts` (unit-tested) and run in `proxy.ts` (Next 16's renamed middleware).
@@ -138,11 +140,44 @@ Pages and server actions re-check the session themselves.
 - **Safety**: Report (with optional block) is on every person's tile and in the control bar. Blocking hides that
   person's video, voice and messages. Admins review reports at `/admin/reports`; "Remove from room" takes effect in
   the person's app straight away and they can't rejoin.
-- **Test tracks**: `public/audio/*.mp3` are synthetic tones generated for testing, recorded in `tracks` with a
-  licence note. Replace them with licensed music before launch.
+- **Demo music**: ten tracks in `public/audio/` (lofi, jazz, Afro lounge, piano, rain ambient, binaural), all
+  synthesized from code by `python3 scripts/music/render.py` (numpy + ffmpeg), so there are no third-party rights.
+  They're registered in `tracks` and grouped into `playlists` (migration `20261019000100_music_library.sql`).
+  The app-wide player (`components/app/player-context.tsx`) plays playlists in order, keeps playing across pages,
+  supports lock-screen controls, and pauses when you join a room (rooms play their own synced track).
+  Replace or review the demo music before launch.
 - **Games** (`components/games/`): four short, calm games with no scores to chase, streaks or leaderboards.
   They're linked from the focus timer's break screen, offered inside rooms during breaks, and the break ends gently
   ("Break's over") instead of keeping people playing.
+
+## Streaks and the activity grid
+
+- **Rules** (`lib/streaks/engine.ts`, unit-tested): a day counts when you finish a focus block or spend 10+ minutes
+  in a room session (`room_attendance`, written by room joins and heartbeats). Each week forgives up to
+  `profiles.streak_rest_days` missed days (2 by default, 1, or 0 for strict; Settings > Streaks). Today never breaks
+  a streak until it's over. The copy never shames: "One block today starts a new streak."
+- **UI**: streak card on Home (flame, Monday–Sunday dots, rest days shown as moons, an evening reminder state), a
+  once-a-day celebration when today's first activity extends the streak (`finishFocusBlock` and `roomHeartbeat`
+  return a streak event; `components/streaks/celebration.tsx`), and a 26-week activity grid on Review with one tab
+  stop and arrow-key navigation. All animation is off under reduced motion.
+- Browser push reminders aren't included: they need a service worker and a push service, a later step.
+
+## Study groups
+
+- **Model** (migration `20261020000200_study_groups.sql`): `groups`, `group_members` (owner / moderator / member;
+  active / pending / banned; mutes), `group_posts` (update, question, resource, win), `group_comments` (one level of
+  replies), `group_reactions`, rooms with `group_id`, and reports that can point at posts and comments.
+- **Access**: RLS lets everyone see listed groups and members see their group's feed, members and rooms; the
+  `invite_code` column is not readable by users at all. Every write goes through `app/app/groups/actions.ts`, which
+  checks membership, role (`lib/groups/rules.ts`, unit-tested), mutes and rate limits before writing.
+- **Joining**: open groups join instantly, request groups wait for a moderator, private groups need the invite
+  link (links always skip approval). Pro members and admins create groups (up to 5); free members join up to 3.
+  Group rooms are free for members and don't use the free trial room.
+- **Safety**: an automatic screen (`lib/groups/moderation.ts`) holds abusive or spammy posts for moderators and
+  shows support resources for self-harm language; links are blocked in a member's first day; posting is rate
+  limited. Reports go to the group's Moderation tab and to `/admin/reports`; admins can pause or delete any group
+  at `/admin/groups`. Blocking someone hides their posts and comments.
+- Next step (not built yet): live audio "spaces" inside groups, using the same Agora setup as rooms.
 
 ## Production setup (Supabase)
 
@@ -159,7 +194,7 @@ Pages and server actions re-check the session themselves.
 
 ## Dev helpers
 
-`scripts/screenshot.mjs`, `scripts/app-shots.mjs`, `scripts/onboarding-shots.mjs`, `scripts/rooms-shots.mjs` and
+`scripts/screenshot.mjs`, `scripts/app-shots.mjs`, `scripts/onboarding-shots.mjs`, `scripts/rooms-shots.mjs`, `scripts/streak-shots.mjs`, `scripts/groups-shots.mjs` and
 `scripts/magic-link-probe.mjs` capture screens at given widths and exercise the real magic-link flow against
 local Supabase (Mailpit). They're for local review only.
 

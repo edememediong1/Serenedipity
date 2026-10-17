@@ -26,6 +26,7 @@ async function RoomsList() {
   const live = team.filter((r) => roomPhase(r, now).live);
   const upcoming = team.filter((r) => !roomPhase(r, now).live);
   const mine = current.filter((r) => r.visibility === "private");
+  const fromGroups = current.filter((r) => r.visibility === "group");
   const pro = profile.plan === "premium" || admin;
   const canHost = canHostPrivate(profile.plan, admin);
 
@@ -78,6 +79,27 @@ async function RoomsList() {
           {grid(upcoming)}
         </section>
       ) : null}
+
+      <section aria-labelledby="groups-heading" className="flex flex-col gap-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 id="groups-heading" className="type-h2">
+            From your groups
+          </h2>
+          <Link
+            href="/app/groups"
+            className="inline-flex min-h-11 items-center rounded-sm type-body-sm font-semibold text-blue-soft focus-ring hover:underline"
+          >
+            Study groups
+          </Link>
+        </div>
+        {fromGroups.length ? (
+          grid(fromGroups)
+        ) : (
+          <p className="text-ink-muted">
+            Join a study group to focus in its rooms with people working toward the same thing.
+          </p>
+        )}
+      </section>
 
       <section aria-labelledby="private-heading" className="flex flex-col gap-4">
         <div className="flex flex-wrap items-center justify-between gap-3">

@@ -47,7 +47,7 @@ export async function listReports(status: "open" | "closed") {
   let q = db
     .from("reports")
     .select(
-      "id, reporter_id, reported_user_id, room_id, reason, details, status, created_at, room:rooms(title)",
+      "id, reporter_id, reported_user_id, room_id, group_id, post_id, comment_id, reason, details, status, created_at, room:rooms(title), group:groups(name, slug), post:group_posts(body), comment:group_comments(body)",
     )
     .order("created_at", { ascending: false })
     .limit(100);
@@ -65,6 +65,11 @@ export async function listReports(status: "open" | "closed") {
   return reports.map((r) => ({
     ...r,
     room: Array.isArray(r.room) ? (r.room[0] ?? null) : r.room,
+    group: Array.isArray(r.group) ? (r.group[0] ?? null) : r.group,
+    content:
+      (Array.isArray(r.post) ? r.post[0]?.body : r.post?.body) ??
+      (Array.isArray(r.comment) ? r.comment[0]?.body : r.comment?.body) ??
+      null,
     reporter: who.get(r.reporter_id)!,
     reported: who.get(r.reported_user_id)!,
     reportsAgainst: totals.get(r.reported_user_id) ?? 1,
@@ -78,4 +83,18 @@ export async function openReportCount() {
     .select("id", { count: "exact", head: true })
     .eq("status", "open");
   return count ?? 0;
+}
+
+/** Every group that hasn't been deleted, biggest first. Admin only. */
+export async function listAllGroups() {
+  await requireAdmin();
+  const { data } = await createAdminClient()
+    .from("groups")
+    .select("id, slug, name, topic, visibility, status, member_count, created_at, owner_id")
+    .neq("status", "deleted")
+    .order("member_count", { ascending: false })
+    .limit(200);
+  const groups = data ?? [];
+  const who = await people(groups.map((g) => g.owner_id).filter((x): x is string => !!x));
+  return groups.map((g) => ({ ...g, owner: g.owner_id ? who.get(g.owner_id)! : null }));
 }

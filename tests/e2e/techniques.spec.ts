@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { completeOnboarding, getProfile, signInAs } from "./helpers";
+import { completeOnboarding, getProfile, signInAs, dismissCelebration } from "./helpers";
 
 test.describe("techniques, laps and the timer banner", () => {
   test("choose a technique and laps; the banner follows you around the app", async ({ page }) => {
@@ -46,6 +46,7 @@ test.describe("techniques, laps and the timer banner", () => {
     await main.getByRole("button", { name: "Start focus" }).click();
     await page.clock.fastForward(25 * 60_000 + 1000);
     await main.getByRole("button", { name: "Done" }).first().click();
+    await dismissCelebration(page);
     await expect(main.getByRole("heading", { level: 1 })).toContainText("Session complete");
     await expect(main.getByText("All 1 lap done.")).toBeVisible();
   });
@@ -64,6 +65,7 @@ test.describe("techniques, laps and the timer banner", () => {
       /^40:\d\d focused$/,
     );
     await main.getByRole("button", { name: "Done" }).click();
+    await dismissCelebration(page);
     await expect(main.getByText("of 8 minutes")).toBeVisible();
   });
 });

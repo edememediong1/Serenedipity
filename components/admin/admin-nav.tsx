@@ -2,7 +2,17 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ArrowLeft, BarChart3, Flag, ListOrdered, Music, Settings, Users, UsersRound } from "lucide-react";
+import {
+  ArrowLeft,
+  BarChart3,
+  Flag,
+  ListOrdered,
+  MessagesSquare,
+  Music,
+  Settings,
+  Users,
+  UsersRound,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const ITEMS = [
@@ -10,6 +20,7 @@ const ITEMS = [
   { href: "/admin/users", label: "Users", icon: Users },
   { href: "/admin/waitlist", label: "Waitlist", icon: ListOrdered },
   { href: "/admin/rooms", label: "Focus rooms", icon: UsersRound },
+  { href: "/admin/groups", label: "Study groups", icon: MessagesSquare },
   { href: "/admin/reports", label: "Safety reports", icon: Flag },
   { href: "/admin/settings", label: "Limits & settings", icon: Settings },
 ];
