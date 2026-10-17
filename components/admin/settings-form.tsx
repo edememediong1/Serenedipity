@@ -8,9 +8,20 @@ import { GlassCard } from "@/components/ui/glass-card";
 import { Input } from "@/components/ui/input";
 import { GUIDE_NAME } from "@/lib/config";
 
-type Props = { free: number | null; premium: number | null; lunaEnabled: boolean };
+type Props = {
+  free: number | null;
+  premium: number | null;
+  lunaEnabled: boolean;
+  roomCreates: number | null;
+  roomJoins: number | null;
+};
 
-export function AdminSettingsForm({ free, premium, lunaEnabled }: Props) {
+const asText = (n: number | null) => (n === null ? "" : String(n));
+const digits = (v: string) => v.replace(/[^0-9]/g, "");
+
+export function AdminSettingsForm({ free, premium, lunaEnabled, roomCreates, roomJoins }: Props) {
+  const [createsVal, setCreates] = useState(asText(roomCreates));
+  const [joinsVal, setJoins] = useState(asText(roomJoins));
   const [freeVal, setFree] = useState(free === null ? "" : String(free));
   const [premiumVal, setPremium] = useState(premium === null ? "" : String(premium));
   const [luna, setLuna] = useState(lunaEnabled);
@@ -27,6 +38,8 @@ export function AdminSettingsForm({ free, premium, lunaEnabled }: Props) {
             await saveSettings({
               free_daily_checkins: freeVal.trim(),
               premium_daily_checkins: premiumVal.trim(),
+              free_daily_room_creates: createsVal.trim(),
+              free_daily_room_joins: joinsVal.trim(),
               luna_enabled: luna,
             }),
           ),
@@ -58,6 +71,33 @@ export function AdminSettingsForm({ free, premium, lunaEnabled }: Props) {
             onChange={(e) => setPremium(e.target.value.replace(/[^0-9]/g, ""))}
             placeholder="Unlimited"
             description="PRD default: unlimited"
+          />
+        </div>
+      </GlassCard>
+      <GlassCard className="flex flex-col gap-5">
+        <div>
+          <h2 className="type-h2">Free plan room allowance</h2>
+          <p className="text-ink-muted">
+            Per person, per local day. Creating covers private rooms and group sessions; joining counts each
+            different room once a day. Pro members and admins are always unlimited. Leave blank for unlimited.
+          </p>
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Input
+            label="Rooms created per day"
+            inputMode="numeric"
+            value={createsVal}
+            onChange={(e) => setCreates(digits(e.target.value))}
+            placeholder="Unlimited"
+            description="Default: 2"
+          />
+          <Input
+            label="Rooms joined per day"
+            inputMode="numeric"
+            value={joinsVal}
+            onChange={(e) => setJoins(digits(e.target.value))}
+            placeholder="Unlimited"
+            description="Default: 10"
           />
         </div>
       </GlassCard>

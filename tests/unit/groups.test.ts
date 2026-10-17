@@ -1,13 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { screenContent } from "@/lib/groups/moderation";
-import {
-  canActOn,
-  FREE_GROUP_LIMIT,
-  joinOutcome,
-  rateLimited,
-  slugify,
-  type JoinContext,
-} from "@/lib/groups/rules";
+import { canActOn, joinOutcome, rateLimited, slugify, type JoinContext } from "@/lib/groups/rules";
 import { PostInput } from "@/lib/groups/validation";
 
 const base: JoinContext = {
@@ -15,9 +8,6 @@ const base: JoinContext = {
   codeValid: false,
   ageConfirmed: true,
   existing: null,
-  plan: "free",
-  admin: false,
-  activeMemberships: 0,
 };
 
 describe("joining groups", () => {
@@ -33,11 +23,9 @@ describe("joining groups", () => {
     expect(joinOutcome({ ...base, visibility: "private" })).toEqual({ ok: false, reason: "invite_only" });
     expect(joinOutcome({ ...base, visibility: "private", codeValid: true })).toMatchObject({ ok: true });
   });
-  it("enforces age, bans and the free plan limit", () => {
+  it("enforces age and bans; joining is free on every plan", () => {
     expect(joinOutcome({ ...base, ageConfirmed: false })).toMatchObject({ reason: "age" });
     expect(joinOutcome({ ...base, existing: "banned", codeValid: true })).toMatchObject({ reason: "banned" });
-    expect(joinOutcome({ ...base, activeMemberships: FREE_GROUP_LIMIT })).toMatchObject({ reason: "limit" });
-    expect(joinOutcome({ ...base, activeMemberships: 9, plan: "premium" })).toMatchObject({ ok: true });
     expect(joinOutcome({ ...base, existing: "active" })).toMatchObject({ reason: "already" });
     // A pending request can be completed with an invite link.
     expect(

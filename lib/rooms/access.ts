@@ -2,47 +2,78 @@
 
 /** A participant counts as "in the room" if their app checked in within this window. */
 export const PRESENCE_WINDOW_MS = 90_000;
-/** Private rooms a Pro member can host at once. */
-export const MAX_HOSTED_ROOMS = 3;
-/** Free members can try one room before upgrading. */
-export const FREE_TRIAL_ROOMS = 1;
+export type RoomLimits = {
+  /** Rooms (including group sessions) a person can create per day; null = unlimited. */
+  createsPerDay: number | null;
+  /** Different rooms a person can join per day; null = unlimited. */
+  joinsPerDay: number | null;
+};
+
+/** Pro members and admins are unlimited; free members get the admin-configured daily allowances. */
+export function roomLimits(
+  free: { createsPerDay: number | null; joinsPerDay: number | null },
+  plan: string,
+  admin: boolean,
+): RoomLimits {
+  if (admin || plan === "premium") return { createsPerDay: null, joinsPerDay: null };
+  return free;
+}
 
 export type JoinCheck = {
   ageConfirmed: boolean;
-  plan: string;
   admin: boolean;
   removed: boolean;
-  /** Already a participant (rejoining doesn't use up the trial or need a free seat check twice). */
-  alreadyMember: boolean;
-  /** Other rooms this person has joined before. */
-  otherRoomsJoined: number;
+  /** Different rooms joined today, not counting this one. */
+  joinedToday: number;
+  /** Already joined this room today (rejoining doesn't count again). */
+  alreadyJoinedToday: boolean;
+  joinsPerDay: number | null;
   liveCount: number;
   capacity: number;
   isHost: boolean;
-  /** Group rooms are part of the group: members join them freely, without using the trial room. */
-  groupRoom?: boolean;
 };
 
-export type JoinDenied = "age" | "removed" | "trial_used" | "full";
+export type JoinDenied = "age" | "removed" | "daily_joins" | "full";
 
 export function joinDenial(c: JoinCheck): JoinDenied | null {
   if (!c.ageConfirmed) return "age";
   if (c.removed) return "removed";
-  const unlimited = c.admin || c.plan === "premium" || c.isHost || !!c.groupRoom;
-  if (!unlimited && !c.alreadyMember && c.otherRoomsJoined >= FREE_TRIAL_ROOMS) return "trial_used";
+  if (!c.isHost && !c.alreadyJoinedToday && c.joinsPerDay !== null && c.joinedToday >= c.joinsPerDay)
+    return "daily_joins";
   if (!c.admin && !c.isHost && c.liveCount >= c.capacity) return "full";
   return null;
 }
 
-export const DENIAL_MESSAGES: Record<JoinDenied, string> = {
-  age: "Rooms are for people 18 and over.",
-  removed: "You can't rejoin this room.",
-  trial_used: "Your free plan includes one trial room. Go Pro to join any room.",
-  full: "This room is full right now. Try again in a little while.",
-};
+export type CreateDenied = "age" | "daily_creates";
 
-export function canHostPrivate(plan: string, admin: boolean) {
-  return admin || plan === "premium";
+export function createDenial(c: {
+  ageConfirmed: boolean;
+  createdToday: number;
+  createsPerDay: number | null;
+}): CreateDenied | null {
+  if (!c.ageConfirmed) return "age";
+  if (c.createsPerDay !== null && c.createdToday >= c.createsPerDay) return "daily_creates";
+  return null;
+}
+
+export function denialMessage(d: JoinDenied | CreateDenied, limits?: RoomLimits) {
+  switch (d) {
+    case "age":
+      return "Rooms are for people 18 and over.";
+    case "removed":
+      return "You can't rejoin this room.";
+    case "full":
+      return "This room is full right now. Try again in a little while.";
+    case "daily_joins":
+      return `You've joined ${limits?.joinsPerDay ?? "your"} rooms today, the free plan's daily limit. Go Pro for unlimited rooms, or come back tomorrow.`;
+    case "daily_creates":
+      return `You've created ${limits?.createsPerDay ?? "your"} rooms today, the free plan's daily limit. Go Pro to create as many as you like.`;
+  }
+}
+
+/** "3 of 10 left today" style summary for the UI; null when unlimited. */
+export function remaining(limit: number | null, used: number) {
+  return limit === null ? null : Math.max(0, limit - used);
 }
 
 /** 32-bit numeric id for Agora, derived from the user id so everyone can map media to a person. */

@@ -1,7 +1,7 @@
 "use client";
 
-import { Mic, Send, Square } from "lucide-react";
-import { useCallback, useRef, useState, useSyncExternalStore, useTransition } from "react";
+import { Mic, Send, Square, Volume2, VolumeX } from "lucide-react";
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore, useTransition } from "react";
 import { sendCheckIn, startPlan } from "@/app/app/check-in/actions";
 import { SignatureOrb } from "@/components/brand/signature-orb";
 import { Button } from "@/components/ui/button";
@@ -9,10 +9,12 @@ import { Eyebrow } from "@/components/ui/eyebrow";
 import { GlassCard } from "@/components/ui/glass-card";
 import { GUIDE_NAME } from "@/lib/config";
 import type { LunaMessage, LunaTurn } from "@/lib/luna/schema";
+import { spokenText } from "@/lib/luna/spoken";
 import { cn } from "@/lib/utils";
 import { LunaBadge, LunaDisclaimer } from "./luna-badge";
 import { PlanCard, type EditableTask } from "./plan-card";
 import { SupportResources } from "./support-resources";
+import { useLunaSpeech } from "./use-luna-speech";
 import { useVoiceNote, voiceSupported } from "./use-voice-note";
 
 type Entry =
@@ -40,6 +42,8 @@ function turnToText(turn: LunaTurn) {
 }
 
 type Props = { mood: string | null; breakMinutes: number };
+
+const VOICE_CHAT_KEY = "luna-voice-chat";
 
 export function CheckInExperience({ mood, breakMinutes }: Props) {
   const [entries, setEntries] = useState<Entry[]>([]);
@@ -105,6 +109,47 @@ export function CheckInExperience({ mood, breakMinutes }: Props) {
     useCallback((text: string, seconds: number) => send(text, "voice", seconds), [send]),
   );
 
+  // ---------- Voice chat: Luna speaks her replies, then listens again (hands-free) ----------
+  const [voiceChat, setVoiceChat] = useState(false);
+  const speech = useLunaSpeech();
+  const spokenUpTo = useRef(0);
+  useEffect(() => {
+    try {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time read of a saved preference after hydration
+      setVoiceChat(localStorage.getItem(VOICE_CHAT_KEY) === "on");
+    } catch {
+      // Not remembered without storage.
+    }
+  }, []);
+  const toggleVoiceChat = () => {
+    const next = !voiceChat;
+    setVoiceChat(next);
+    if (!next) speech.stop();
+    try {
+      localStorage.setItem(VOICE_CHAT_KEY, next ? "on" : "off");
+    } catch {
+      // Not remembered without storage.
+    }
+  };
+  const { speak, stop: stopSpeaking } = speech;
+  const startListening = voice.start;
+  useEffect(() => {
+    if (!voiceChat || entries.length <= spokenUpTo.current) return;
+    const last = entries[entries.length - 1];
+    spokenUpTo.current = entries.length;
+    if (last.role !== "assistant") return;
+    const prev = entries[entries.length - 2];
+    void speak(spokenText(last.turn)).then(() => {
+      // Keep the conversation going hands-free if they were talking, not typing.
+      if (last.turn.kind === "clarify" && prev?.role === "user" && prev.mode === "voice" && canRecord)
+        void startListening({ autoStop: true });
+    });
+  }, [entries, voiceChat, speak, startListening, canRecord]);
+  const startRecording = () => {
+    stopSpeaking();
+    void voice.start({ autoStop: voiceChat });
+  };
+
   const begin = async (reset: boolean) => {
     if (!checkinId || !latest) return;
     setStarting(true);
@@ -146,6 +191,32 @@ export function CheckInExperience({ mood, breakMinutes }: Props) {
       ) : (
         <h1 className="sr-only">Clarity check-in with {GUIDE_NAME}</h1>
       )}
+
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <Button
+          variant="secondary"
+          size="sm"
+          aria-pressed={voiceChat}
+          onClick={toggleVoiceChat}
+          className="w-fit"
+        >
+          {voiceChat ? <Volume2 aria-hidden="true" /> : <VolumeX aria-hidden="true" />}
+          Voice chat {voiceChat ? "on" : "off"}
+        </Button>
+        {speech.speaking ? (
+          <p role="status" className="flex items-center gap-3 type-body-sm text-ink-muted">
+            <SignatureOrb size={16} aria-hidden="true" className="animate-pulse motion-reduce:animate-none" />
+            {GUIDE_NAME} is speaking…
+            <Button variant="ghost" size="sm" onClick={speech.stop}>
+              Stop
+            </Button>
+          </p>
+        ) : voiceChat ? (
+          <p className="type-body-sm text-ink-muted">
+            {GUIDE_NAME} reads her replies aloud{canRecord ? " and listens when you talk" : ""}.
+          </p>
+        ) : null}
+      </div>
 
       {/* Conversation */}
       <ol className="flex flex-col gap-6" aria-live="polite" aria-busy={pending}>
@@ -254,7 +325,7 @@ export function CheckInExperience({ mood, breakMinutes }: Props) {
               <button
                 type="button"
                 disabled={busy || !canRecord}
-                onClick={recording ? voice.stop : voice.start}
+                onClick={recording ? voice.stop : startRecording}
                 aria-label={recording ? "Stop recording" : "Record a voice note"}
                 className={cn(
                   "relative rounded-pill focus-ring transition-transform duration-300 disabled:opacity-60",
@@ -320,6 +391,24 @@ export function CheckInExperience({ mood, breakMinutes }: Props) {
                 aria-describedby={error && !latest ? "checkin-error" : undefined}
                 className="min-h-12 flex-1 resize-none rounded-md border border-line bg-surface-deep px-4 py-3 text-ink focus-ring placeholder:text-ink-muted/70"
               />
+              {!isFirst && canRecord ? (
+                <Button
+                  type="button"
+                  size="icon"
+                  variant="secondary"
+                  className="size-12"
+                  aria-label={recording ? "Stop recording" : "Reply by voice"}
+                  aria-pressed={recording}
+                  disabled={busy}
+                  onClick={recording ? voice.stop : startRecording}
+                >
+                  {recording ? (
+                    <Square className="fill-current" aria-hidden="true" />
+                  ) : (
+                    <Mic aria-hidden="true" />
+                  )}
+                </Button>
+              ) : null}
               <Button
                 type="submit"
                 size="icon"
@@ -330,6 +419,13 @@ export function CheckInExperience({ mood, breakMinutes }: Props) {
                 <Send aria-hidden="true" />
               </Button>
             </div>
+            {!isFirst && (recording || voice.status === "transcribing") ? (
+              <p className="type-body-sm text-ink-muted tabular-nums" aria-live="polite">
+                {recording
+                  ? `Listening… ${formatSeconds(voice.seconds)}${voiceChat ? " · stops when you pause" : " · tap to stop"}`
+                  : "Turning your voice into text…"}
+              </p>
+            ) : null}
             {error || voice.error ? (
               <p id="checkin-error" role="alert" className="type-body-sm text-critical">
                 {error ?? voice.error}

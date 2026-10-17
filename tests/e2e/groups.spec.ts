@@ -3,7 +3,6 @@ import { expect, test, type Browser } from "@playwright/test";
 import {
   backdateMembership,
   completeOnboarding,
-  createRoom,
   groupBySlug,
   memberStatus,
   setProfile,
@@ -207,7 +206,7 @@ test.describe("study groups", () => {
     await expect(troll.page.getByRole("main").getByText("You can't take part in this group.")).toBeVisible();
   });
 
-  test("group rooms are for members, and don't use the free trial room", async ({ browser }) => {
+  test("group rooms are for members only", async ({ browser }) => {
     const owner = await person(browser, "Kemi", "premium");
     const slug = await createGroup(owner.page, `Morning sprint club ${Date.now() % 100000}`);
     const group = await groupBySlug(slug);
@@ -223,16 +222,12 @@ test.describe("study groups", () => {
     await outsider.page.goto(roomUrl);
     await expect(outsider.page.getByRole("heading", { name: "This page could not be found." })).toBeVisible();
 
-    // A free member joins the group room, then can still use their trial on a public room.
+    // A free member joins the group, then its room.
     const member = await person(browser, "Tomi");
     await member.page.goto(`/app/groups/${slug}`);
     await member.page.getByRole("main").getByRole("button", { name: "Join group" }).click();
     await expect.poll(async () => (await memberStatus(group.id, member.userId))?.status).toBe("active");
     await member.page.goto(roomUrl);
-    await member.page.getByRole("main").getByRole("button", { name: "Join room" }).click();
-    await expect(member.page.getByRole("main").getByRole("button", { name: "Leave room" })).toBeVisible();
-    const publicRoom = await createRoom(5);
-    await member.page.goto(`/app/rooms/${publicRoom.id}`);
     await member.page.getByRole("main").getByRole("button", { name: "Join room" }).click();
     await expect(member.page.getByRole("main").getByRole("button", { name: "Leave room" })).toBeVisible();
   });

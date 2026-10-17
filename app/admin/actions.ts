@@ -14,6 +14,8 @@ const limit = z
 const SettingsSchema = z.object({
   free_daily_checkins: limit,
   premium_daily_checkins: limit,
+  free_daily_room_creates: limit,
+  free_daily_room_joins: limit,
   luna_enabled: z.boolean(),
 });
 
@@ -24,7 +26,7 @@ export async function saveSettings(input: z.input<typeof SettingsSchema>): Promi
     return { ok: false, message: "Limits must be whole numbers from 0 to 1000, or blank for unlimited." };
   const admin = createAdminClient();
   const rows = Object.entries(parsed.data).map(([key, value]) => ({
-    key: key as "free_daily_checkins" | "premium_daily_checkins" | "luna_enabled",
+    key: key as keyof typeof parsed.data,
     // Unlimited is stored as the string "unlimited" (a JSON null would arrive as SQL NULL).
     value: value === null ? "unlimited" : value,
     updated_at: new Date().toISOString(),
@@ -36,7 +38,8 @@ export async function saveSettings(input: z.input<typeof SettingsSchema>): Promi
     return { ok: false, message: "Couldn't save settings." };
   }
   revalidatePath("/admin/settings");
-  return { ok: true, message: "Settings saved. They apply to the next check-in." };
+  revalidatePath("/app/rooms");
+  return { ok: true, message: "Settings saved. They apply straight away." };
 }
 
 const UserUpdate = z.object({

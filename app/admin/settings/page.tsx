@@ -14,6 +14,8 @@ async function SettingsContent() {
       free={s.freeDailyCheckins}
       premium={s.premiumDailyCheckins}
       lunaEnabled={s.lunaEnabled}
+      roomCreates={s.freeDailyRoomCreates}
+      roomJoins={s.freeDailyRoomJoins}
     />
   );
 }

@@ -60,6 +60,7 @@ All variables are listed with comments in [`.env.example`](.env.example).
 | `STRIPE_PRICE_MONTHLY` / `STRIPE_PRICE_YEARLY` | Price IDs for Pro ($7.99 / $59.99) | For Pro |
 | `ANTHROPIC_API_KEY` | Luna's check-ins and plans (Claude, server-only) | For Luna |
 | `DEEPGRAM_API_KEY` / `DEEPGRAM_MODEL` | Voice-note transcription (server-only); without it check-ins are typed | For voice |
+| `DEEPGRAM_TTS_MODEL` | Luna's speaking voice for voice chat (Aura, same key; default `aura-2-luna-en`). Without a key the browser voice is used | No |
 | `LUNA_MOCK` | `true` = canned Luna replies for local dev and e2e. Never set in production | No |
 | `AGORA_APP_ID` / `AGORA_APP_CERTIFICATE` | Mic and camera in focus rooms (tokens issued by `/api/rooms/[id]/rtc-token`, server-only) | For room voice/video |
 | `RATE_LIMIT_SALT` | Hashes IP addresses for the waitlist rate limiter | Yes |
@@ -111,6 +112,31 @@ Pages and server actions re-check the session themselves.
   long break every 4 blocks, chime, Done / Need more time / Stuck between blocks, "I'm stuck" asks Luna for a
   smaller step. Blocks are saved to `focus_blocks` and feed the dashboard's Today card.
 
+## Plans and daily allowances
+
+| | Free | Pro |
+| --- | --- | --- |
+| Create rooms (private rooms and group sessions) | 2 per day | Unlimited |
+| Join rooms (each different room counts once a day) | 10 per day | Unlimited |
+| Check-ins with Luna | 1 per day | Unlimited |
+| Join study groups, post, comment, react | Yes | Yes |
+| Start study groups | No | Yes (up to 5) |
+
+The room and check-in allowances are edited at `/admin/settings` (`app_settings`; blank = unlimited) and count
+each person's local day. Joins are logged in `room_joins`; rules live in `lib/rooms/access.ts` (unit-tested).
+Admins are never limited.
+
+## Voice chat with Luna and to-dos
+
+- **Voice chat** (check-in, "Voice chat on"): Luna reads her replies aloud (`POST /api/luna/speak`, Deepgram Aura;
+  falls back to the browser's speech when no key is set or `LUNA_MOCK=true`), then reopens the mic so you can
+  answer hands-free; recording stops on its own after a short pause. Replies stay on screen as text, and Stop is
+  always there. The speak route needs a session, caps text at 1,200 characters and rate limits per user.
+- **To-dos** (Home, "Your to-dos"): add your own tasks with an optional time and length; they join today's plan
+  (`tasks.source = 'manual'`, `tasks.due_at`), so the focus timer picks them up. Timed tasks sort first, past-due
+  ones are marked, and finished ones show when they were done. Times are entered in the person's time zone and
+  converted on the server (`lib/time.ts`, tested across DST).
+
 ## Admin, limits and billing
 
 - **Admins**: anyone in `ADMIN_EMAILS` or with `profiles.role = 'admin'` (set it from `/admin/users`, or in SQL:
@@ -129,7 +155,7 @@ Pages and server actions re-check the session themselves.
 
 - **Rooms** (`rooms`, `room_participants`, `room_messages`, `reports`, `blocks`, `tracks`; migration
   `20261018000100_rooms.sql`). Admins schedule public rooms at `/admin/rooms` (once, hourly, daily, weekdays);
-  Pro members host up to 3 private rooms with an invite link. Free members get one trial room. 18+ only.
+  anyone can host private rooms with an invite link, within the daily allowances above. 18+ only.
 - **Sync without a ticking server**: every client derives the session, focus/break phase and music position from the
   room's schedule and the server clock (`lib/rooms/schedule.ts`, `GET /api/time`); the audio re-seeks if it drifts
   more than 0.6s.
@@ -171,8 +197,8 @@ Pages and server actions re-check the session themselves.
   `invite_code` column is not readable by users at all. Every write goes through `app/app/groups/actions.ts`, which
   checks membership, role (`lib/groups/rules.ts`, unit-tested), mutes and rate limits before writing.
 - **Joining**: open groups join instantly, request groups wait for a moderator, private groups need the invite
-  link (links always skip approval). Pro members and admins create groups (up to 5); free members join up to 3.
-  Group rooms are free for members and don't use the free trial room.
+  link (links always skip approval). Pro members and admins create groups (up to 5); everyone can join, post and
+  comment. Group rooms count toward the daily room allowances like any other room.
 - **Safety**: an automatic screen (`lib/groups/moderation.ts`) holds abusive or spammy posts for moderators and
   shows support resources for self-harm language; links are blocked in a member's first day; posting is rate
   limited. Reports go to the group's Moderation tab and to `/admin/reports`; admins can pause or delete any group
@@ -194,7 +220,7 @@ Pages and server actions re-check the session themselves.
 
 ## Dev helpers
 
-`scripts/screenshot.mjs`, `scripts/app-shots.mjs`, `scripts/onboarding-shots.mjs`, `scripts/rooms-shots.mjs`, `scripts/streak-shots.mjs`, `scripts/groups-shots.mjs` and
+`scripts/screenshot.mjs`, `scripts/app-shots.mjs`, `scripts/onboarding-shots.mjs`, `scripts/rooms-shots.mjs`, `scripts/streak-shots.mjs`, `scripts/groups-shots.mjs`, `scripts/todo-shots.mjs` and
 `scripts/magic-link-probe.mjs` capture screens at given widths and exercise the real magic-link flow against
 local Supabase (Mailpit). They're for local review only.
 

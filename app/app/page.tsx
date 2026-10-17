@@ -14,6 +14,8 @@ import { greeting } from "@/lib/greeting";
 import { getStreak } from "@/lib/streaks/data";
 import { hourIn } from "@/lib/review/stats";
 import { StreakCard } from "@/components/streaks/streak-card";
+import { TodoCard } from "@/components/tasks/todo-card";
+import { getTodayTodos } from "@/lib/tasks/data";
 import { listPlaylists } from "@/lib/music/data";
 import { GAMES } from "@/components/games/catalog";
 
@@ -30,6 +32,11 @@ async function Streak() {
   const [streak, { profile }] = await Promise.all([getStreak(), getSessionProfile()]);
   const evening = hourIn(new Date().toISOString(), profile.timezone) >= 18;
   return <StreakCard streak={streak} evening={evening} />;
+}
+
+async function Todos() {
+  const [todos, { profile }] = await Promise.all([getTodayTodos(), getSessionProfile()]);
+  return <TodoCard todos={todos} timezone={profile.timezone} now={new Date().getTime()} />;
 }
 
 async function Picked() {
@@ -74,6 +81,12 @@ export default function HomePage() {
         <div className="order-last lg:order-none">
           <Suspense fallback={<TodayCard />}>
             <Today />
+          </Suspense>
+        </div>
+
+        <div className="lg:col-span-2">
+          <Suspense fallback={<div className="h-48 rounded-lg bg-surface-deep/60" aria-hidden="true" />}>
+            <Todos />
           </Suspense>
         </div>
 

@@ -4,6 +4,7 @@ import { getSessionProfile } from "@/lib/auth/session";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { Database } from "@/lib/supabase/database.types";
 import { PRESENCE_WINDOW_MS } from "./access";
+import { roomAllowance } from "./allowance";
 
 type RoomRow = Database["public"]["Tables"]["rooms"]["Row"];
 export type RoomTrack = { id: string; title: string; file_url: string; duration_seconds: number };
@@ -68,10 +69,13 @@ export async function listRooms() {
   const removed = new Set((mine ?? []).filter((m) => m.removed).map((m) => m.room_id));
   const memberOf = new Set((mine ?? []).filter((m) => !m.removed).map((m) => m.room_id));
   const visible = (rooms ?? []).filter((r) => !removed.has(r.id));
-  const counts = await liveCounts(visible.map((r) => r.id));
+  const [counts, allowance] = await Promise.all([
+    liveCounts(visible.map((r) => r.id)),
+    roomAllowance(user.id, profile, admin),
+  ]);
   return {
     rooms: visible.map((r) => shape(r, user.id, memberOf, counts, admin)),
-    joinedCount: (mine ?? []).length,
+    allowance,
     profile,
     admin,
     userId: user.id,

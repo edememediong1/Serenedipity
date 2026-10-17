@@ -9,8 +9,6 @@ export type MemberStatus = "active" | "pending" | "banned";
 
 /** Groups a Pro member (or admin) can own at once. */
 export const MAX_OWNED_GROUPS = 5;
-/** Active memberships on the free plan. */
-export const FREE_GROUP_LIMIT = 3;
 /** New members can't post links for this long (a common spam pattern). */
 export const NEW_MEMBER_LINK_DELAY_MS = 24 * 60 * 60 * 1000;
 export const POST_LIMIT = { count: 5, windowMs: 60 * 60 * 1000 };
@@ -55,23 +53,18 @@ export type JoinContext = {
   ageConfirmed: boolean;
   /** Existing membership row, if any. */
   existing: MemberStatus | null;
-  plan: string;
-  admin: boolean;
-  activeMemberships: number;
 };
 
 export type JoinOutcome =
   | { ok: true; status: "active" | "pending" }
-  | { ok: false; reason: "age" | "banned" | "invite_only" | "limit" | "already" };
+  | { ok: false; reason: "age" | "banned" | "invite_only" | "already" };
 
-/** What happens when someone tries to join. Invite links always skip approval. */
+/** What happens when someone tries to join. Invite links always skip approval. Joining is free on every plan. */
 export function joinOutcome(c: JoinContext): JoinOutcome {
   if (!c.ageConfirmed) return { ok: false, reason: "age" };
   if (c.existing === "banned") return { ok: false, reason: "banned" };
   if (c.existing === "active") return { ok: false, reason: "already" };
   if (c.visibility === "private" && !c.codeValid) return { ok: false, reason: "invite_only" };
-  const unlimited = c.admin || c.plan === "premium";
-  if (!unlimited && c.activeMemberships >= FREE_GROUP_LIMIT) return { ok: false, reason: "limit" };
   if (c.visibility === "request" && !c.codeValid) return { ok: true, status: "pending" };
   return { ok: true, status: "active" };
 }
@@ -80,7 +73,6 @@ export const JOIN_MESSAGES: Record<Exclude<JoinOutcome, { ok: true }>["reason"],
   age: "Groups are for people 18 and over.",
   banned: "You can't join this group.",
   invite_only: "This group is invite-only. Ask a member for the link.",
-  limit: `The free plan includes ${FREE_GROUP_LIMIT} groups. Leave one or go Pro for unlimited groups.`,
   already: "You're already a member.",
 };
 

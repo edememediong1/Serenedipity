@@ -225,3 +225,28 @@ export async function dismissCelebration(page: Page) {
   await dialog.getByRole("button", { name: "Keep going" }).click();
   await dialog.waitFor({ state: "hidden" });
 }
+
+/** Marks `n` different rooms as joined today (UTC) for this user, as if they'd been in them. */
+export async function seedRoomJoins(userId: string, n: number) {
+  const db = admin();
+  const { data: rooms, error } = await db
+    .from("rooms")
+    .insert(
+      Array.from({ length: n }, (_, i) => ({
+        title: `Seeded room ${i + 1}`,
+        schedule: "once",
+        starts_at: new Date(Date.now() - 5 * 60_000).toISOString(),
+        session_minutes: 55,
+        focus_minutes: 25,
+        break_minutes: 5,
+        status: "archived",
+      })),
+    )
+    .select("id");
+  if (error) throw error;
+  const today = new Date().toISOString().slice(0, 10);
+  const { error: joinError } = await db
+    .from("room_joins")
+    .insert(rooms!.map((r) => ({ user_id: userId, room_id: r.id, joined_on: today })));
+  if (joinError) throw joinError;
+}

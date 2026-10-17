@@ -29,7 +29,8 @@ import {
   ReactionInput,
   type GroupInputValue,
 } from "@/lib/groups/validation";
-import { inviteCode } from "@/lib/rooms/access";
+import { createDenial, denialMessage, inviteCode } from "@/lib/rooms/access";
+import { roomAllowance } from "@/lib/rooms/allowance";
 import { RoomInput, type RoomInputValue } from "@/lib/rooms/validation";
 import { getStreak } from "@/lib/streaks/data";
 import { REPORT_REASONS } from "@/lib/rooms/validation";
@@ -153,19 +154,11 @@ export async function joinGroup(
   const ctx = await groupContext(groupId);
   const blocked = writable(ctx);
   if (blocked) return fail(blocked);
-  const { count } = await ctx.db
-    .from("group_members")
-    .select("group_id", { count: "exact", head: true })
-    .eq("user_id", ctx.user.id)
-    .eq("status", "active");
   const outcome = joinOutcome({
     visibility: ctx.group!.visibility as GroupVisibility,
     codeValid: !!code && code === ctx.group!.invite_code,
     ageConfirmed: ctx.profile.age_confirmed,
     existing: ctx.member?.status ?? null,
-    plan: ctx.profile.plan,
-    admin: ctx.admin,
-    activeMemberships: count ?? 0,
   });
   if (!outcome.ok) return fail(JOIN_MESSAGES[outcome.reason]);
   const { error } = await ctx.db.from("group_members").upsert({
@@ -699,6 +692,14 @@ export async function createGroupRoom(groupId: string, input: RoomInputValue): P
   const blocked = writable(ctx);
   if (blocked) return fail(blocked);
   if (!isModerator(ctx.role) && !ctx.admin) return fail("Only moderators can schedule group rooms.");
+  // Group sessions count toward the same daily creation allowance as private rooms.
+  const allowance = await roomAllowance(ctx.user.id, ctx.profile, ctx.admin);
+  const denied = createDenial({
+    ageConfirmed: ctx.profile.age_confirmed,
+    createdToday: allowance.createdToday,
+    createsPerDay: allowance.limits.createsPerDay,
+  });
+  if (denied) return fail(denialMessage(denied, allowance.limits));
   const r = parsed.data;
   const { data, error } = await ctx.db
     .from("rooms")

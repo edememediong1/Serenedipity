@@ -5,13 +5,8 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { isAdmin } from "@/lib/auth/admin";
 import { getSessionProfile } from "@/lib/auth/session";
-import {
-  canHostPrivate,
-  DENIAL_MESSAGES,
-  inviteCode,
-  joinDenial,
-  MAX_HOSTED_ROOMS,
-} from "@/lib/rooms/access";
+import { createDenial, denialMessage, inviteCode, joinDenial } from "@/lib/rooms/access";
+import { roomAllowance } from "@/lib/rooms/allowance";
 import { liveCounts } from "@/lib/rooms/data";
 import { roomPhase } from "@/lib/rooms/schedule";
 import { MessageInput, ReportInput, RoomInput, type RoomInputValue } from "@/lib/rooms/validation";
@@ -21,7 +16,7 @@ import { ROOM_SESSION_MIN_SECONDS, type StreakEvent } from "@/lib/streaks/engine
 
 /*
  * Room writes. Each action authorises the caller (session, plan, membership, room phase) and only
- * then writes with the service role, because the rules (capacity, the free trial room, break-only
+ * then writes with the service role, because the rules (capacity, daily allowances, break-only
  * chat) span rows that the caller can't see under RLS.
  */
 
@@ -89,11 +84,10 @@ export async function joinRoom(roomId: string, code?: string): Promise<RoomResul
   if (!room) return { ok: false, message: "That room has closed." };
 
   const db = createAdminClient();
-  const { data: rows } = await db
-    .from("room_participants")
-    .select("room_id, removed, room:rooms(group_id)")
-    .eq("user_id", user.id);
-  const mine = (rows ?? []).find((r) => r.room_id === roomId);
+  const [{ data: mine }, allowance] = await Promise.all([
+    db.from("room_participants").select("removed").eq("room_id", roomId).eq("user_id", user.id).maybeSingle(),
+    roomAllowance(user.id, profile, admin),
+  ]);
   const isHost = room.host_id === user.id;
 
   if (room.visibility === "private" && !isHost && !mine && !admin && code !== room.invite_code)
@@ -111,23 +105,19 @@ export async function joinRoom(roomId: string, code?: string): Promise<RoomResul
   }
 
   const counts = await liveCounts([roomId]);
+  const alreadyJoinedToday = allowance.joinedRoomIds.has(roomId);
   const denial = joinDenial({
     ageConfirmed: profile.age_confirmed,
-    plan: profile.plan,
     admin,
     removed: !!mine?.removed,
-    alreadyMember: !!mine,
-    // Group rooms don't use up the free trial room.
-    otherRoomsJoined: (rows ?? []).filter((r) => {
-      const other = Array.isArray(r.room) ? r.room[0] : r.room;
-      return r.room_id !== roomId && !other?.group_id;
-    }).length,
+    joinedToday: allowance.joinedToday - (alreadyJoinedToday ? 1 : 0),
+    alreadyJoinedToday,
+    joinsPerDay: allowance.limits.joinsPerDay,
     liveCount: counts.get(roomId) ?? 0,
     capacity: room.capacity,
     isHost,
-    groupRoom: !!room.group_id,
   });
-  if (denial) return { ok: false, message: DENIAL_MESSAGES[denial] };
+  if (denial) return { ok: false, message: denialMessage(denial, allowance.limits) };
 
   const now = new Date().toISOString();
   const { error } = await db
@@ -137,6 +127,10 @@ export async function joinRoom(roomId: string, code?: string): Promise<RoomResul
     console.error("[rooms] join failed", error);
     return { ok: false, message: "Couldn't join the room. Try again." };
   }
+  // Count this room toward today's allowance (once per room per day).
+  await db
+    .from("room_joins")
+    .upsert({ user_id: user.id, room_id: roomId, joined_on: allowance.today }, { ignoreDuplicates: true });
   await recordAttendance(room, user.id);
   revalidatePath("/app/rooms");
   return { ok: true };
@@ -267,26 +261,25 @@ export async function setBlocked(userId: string, blocked: boolean): Promise<Room
 export type CreateRoomResult =
   { ok: true; id: string; inviteCode: string | null } | { ok: false; message: string };
 
-/** Pro members host private rooms with an invite link. Public rooms are scheduled by admins (/admin/rooms). */
+/**
+ * Anyone can host a private room with an invite link: free members up to their daily allowance,
+ * Pro members as many as they like. Public rooms are scheduled by admins (/admin/rooms).
+ */
 export async function createPrivateRoom(input: RoomInputValue): Promise<CreateRoomResult> {
   const parsed = RoomInput.safeParse(input);
   if (!parsed.success)
     return { ok: false, message: parsed.error.issues[0]?.message ?? "Check the room details." };
   const { user, profile } = await getSessionProfile();
   const admin = isAdmin(profile, user.email);
-  if (!canHostPrivate(profile.plan, admin))
-    return { ok: false, message: "Hosting private rooms is part of Pro." };
-  if (!profile.age_confirmed) return { ok: false, message: DENIAL_MESSAGES.age };
+  const allowance = await roomAllowance(user.id, profile, admin);
+  const denied = createDenial({
+    ageConfirmed: profile.age_confirmed,
+    createdToday: allowance.createdToday,
+    createsPerDay: allowance.limits.createsPerDay,
+  });
+  if (denied) return { ok: false, message: denialMessage(denied, allowance.limits) };
 
   const db = createAdminClient();
-  const { count } = await db
-    .from("rooms")
-    .select("id", { count: "exact", head: true })
-    .eq("host_id", user.id)
-    .eq("status", "active");
-  if (!admin && (count ?? 0) >= MAX_HOSTED_ROOMS)
-    return { ok: false, message: `You can host up to ${MAX_HOSTED_ROOMS} rooms at once. Close one first.` };
-
   const r = parsed.data;
   const code = inviteCode((n) => randomBytes(n));
   const { data, error } = await db

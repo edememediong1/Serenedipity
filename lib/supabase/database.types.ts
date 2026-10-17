@@ -730,6 +730,36 @@ export type Database = {
           },
         ];
       };
+      room_joins: {
+        Row: {
+          joined_at: string;
+          joined_on: string;
+          room_id: string;
+          user_id: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          joined_at?: string;
+          joined_on: string;
+          room_id: string;
+          user_id: string;
+        };
+        Update: {
+          joined_at?: string;
+          joined_on?: string;
+          room_id?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "room_joins_room_id_fkey";
+            columns: ["room_id"];
+            isOneToOne: false;
+            referencedRelation: "rooms";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       room_messages: {
         Row: {
           body: string;
@@ -955,11 +985,13 @@ export type Database = {
         Row: {
           completed_at: string | null;
           created_at: string;
+          due_at: string | null;
           estimate_minutes: number;
           id: string;
           music_category: string | null;
           plan_id: string;
           position: number;
+          source: string;
           status: string;
           title: string;
           user_id: string;
@@ -968,11 +1000,13 @@ export type Database = {
         Insert: {
           completed_at?: string | null;
           created_at?: string;
+          due_at?: string | null;
           estimate_minutes: number;
           id?: string;
           music_category?: string | null;
           plan_id: string;
           position: number;
+          source?: string;
           status?: string;
           title: string;
           user_id: string;
@@ -980,11 +1014,13 @@ export type Database = {
         Update: {
           completed_at?: string | null;
           created_at?: string;
+          due_at?: string | null;
           estimate_minutes?: number;
           id?: string;
           music_category?: string | null;
           plan_id?: string;
           position?: number;
+          source?: string;
           status?: string;
           title?: string;
           user_id?: string;

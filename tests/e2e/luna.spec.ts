@@ -55,4 +55,47 @@ test.describe("check-in with Luna", () => {
     await expect(main.getByRole("heading", { name: "Today's plan" })).toHaveCount(0);
     await expect(main.getByRole("textbox")).toHaveCount(0);
   });
+
+  test("voice chat reads Luna's replies aloud, with a stop control", async ({ page }) => {
+    // Stand in for the speech service with a real (long) audio file, and capture what's spoken.
+    const spoken: string[] = [];
+    await page.route("**/api/luna/speak", async (route) => {
+      spoken.push((route.request().postDataJSON() as { text: string }).text);
+      await route.fulfill({ path: "public/audio/slow-tide.mp3", contentType: "audio/mpeg" });
+    });
+    await page.goto("/app/check-in", { waitUntil: "networkidle" });
+    const main = page.getByRole("main");
+    const toggle = main.getByRole("button", { name: "Voice chat off" });
+    await toggle.click();
+    await expect(main.getByRole("button", { name: "Voice chat on" })).toHaveAttribute("aria-pressed", "true");
+
+    await main.getByRole("textbox", { name: "Or type it" }).fill("I feel scattered.");
+    await main.getByRole("button", { name: "Send" }).click();
+    await expect(
+      main.getByText("Thanks for telling me. Let's figure out the shape of it first."),
+    ).toBeVisible();
+    await expect(main.getByRole("status").filter({ hasText: "Luna is speaking" })).toBeVisible();
+    expect(spoken[0]).toContain("What exactly do you need to finish?");
+    // Replies can be answered by voice too.
+    await expect(main.getByRole("button", { name: "Reply by voice" })).toBeVisible();
+
+    await main.getByRole("button", { name: "Stop" }).click();
+    await expect(main.getByText("Luna is speaking")).toHaveCount(0);
+
+    // The preference is remembered.
+    await page.reload({ waitUntil: "networkidle" });
+    await expect(main.getByRole("button", { name: "Voice chat on" })).toBeVisible();
+  });
+
+  test("the speech endpoint needs a session and falls back when voice isn't set up", async ({
+    page,
+    request,
+  }) => {
+    const anon = await request.post("/api/luna/speak", { data: { text: "hello" } });
+    expect(anon.status()).toBe(401);
+    // Signed in (beforeEach) but LUNA_MOCK=true: the app uses the device's own voice.
+    const res = await page.request.post("/api/luna/speak", { data: { text: "hello" } });
+    expect(res.status()).toBe(501);
+    expect((await res.json()).fallback).toBe(true);
+  });
 });

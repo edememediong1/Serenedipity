@@ -7,14 +7,13 @@ import { RoomCard } from "@/components/rooms/room-card";
 import { Button } from "@/components/ui/button";
 import { Eyebrow } from "@/components/ui/eyebrow";
 import { GlassCard } from "@/components/ui/glass-card";
-import { canHostPrivate, FREE_TRIAL_ROOMS } from "@/lib/rooms/access";
 import { listRooms } from "@/lib/rooms/data";
 import { roomPhase } from "@/lib/rooms/schedule";
 
 export const metadata: Metadata = { title: "Rooms" };
 
 async function RoomsList() {
-  const { rooms, profile, admin, joinedCount } = await listRooms();
+  const { rooms, profile, allowance } = await listRooms();
   const now = new Date().getTime();
   const tz = profile.timezone;
   // One-off rooms that have finished drop off the list.
@@ -27,8 +26,7 @@ async function RoomsList() {
   const upcoming = team.filter((r) => !roomPhase(r, now).live);
   const mine = current.filter((r) => r.visibility === "private");
   const fromGroups = current.filter((r) => r.visibility === "group");
-  const pro = profile.plan === "premium" || admin;
-  const canHost = canHostPrivate(profile.plan, admin);
+  const limited = allowance.limits.joinsPerDay !== null || allowance.limits.createsPerDay !== null;
 
   const grid = (list: typeof rooms) => (
     <ul className="grid gap-4 sm:grid-cols-2">
@@ -47,12 +45,22 @@ async function RoomsList() {
           Rooms are for people 18 and over. Confirm your age in settings to join.
         </GlassCard>
       ) : null}
-      {!pro ? (
-        <GlassCard className="flex flex-wrap items-center gap-4 p-5">
+      {limited ? (
+        <GlassCard
+          className="flex flex-wrap items-center gap-4 p-5"
+          role="note"
+          aria-label="Today's room allowance"
+        >
           <p className="min-w-0 flex-1 text-ink-muted">
-            {joinedCount >= FREE_TRIAL_ROOMS
-              ? "You've used your free trial room. Pro opens every room and lets you host your own."
-              : "Your free plan includes one trial room. Pro opens every room and lets you host your own."}
+            Free plan today:{" "}
+            <span className="font-semibold text-ink">
+              {allowance.joinsLeft} of {allowance.limits.joinsPerDay} room joins
+            </span>{" "}
+            and{" "}
+            <span className="font-semibold text-ink">
+              {allowance.createsLeft} of {allowance.limits.createsPerDay} rooms to create
+            </span>{" "}
+            left. Pro is unlimited.
           </p>
           <Button asChild variant="secondary" size="sm">
             <Link href="/app/upgrade">See Pro</Link>
@@ -106,21 +114,17 @@ async function RoomsList() {
           <h2 id="private-heading" className="type-h2">
             Private rooms
           </h2>
-          {canHost ? (
-            <Button asChild size="sm">
-              <Link href="/app/rooms/new">
-                <Plus aria-hidden="true" /> Host a room
-              </Link>
-            </Button>
-          ) : null}
+          <Button asChild size="sm">
+            <Link href="/app/rooms/new">
+              <Plus aria-hidden="true" /> Host a room
+            </Link>
+          </Button>
         </div>
         {mine.length ? (
           grid(mine)
         ) : (
           <p className="text-ink-muted">
-            {canHost
-              ? "Host a room for your study group or team. You'll get an invite link to share."
-              : "Pro members can host private rooms and share an invite link."}
+            Host a room for your study group or team. You&apos;ll get an invite link to share.
           </p>
         )}
       </section>

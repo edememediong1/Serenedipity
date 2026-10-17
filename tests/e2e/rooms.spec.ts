@@ -6,6 +6,7 @@ import {
   createRoom,
   isBlocked,
   participant,
+  seedRoomJoins,
   setProfile,
   signInAs,
   uniqueEmail,
@@ -87,34 +88,53 @@ test.describe("focus rooms", () => {
     await archiveRoomForTest(room.id);
   });
 
-  test("free members get one trial room; Pro members can host private rooms", async ({ browser }) => {
-    const first = await createRoom(5);
-    const second = await createRoom(5);
+  test("free members join 10 rooms and create 2 a day; private rooms stay private", async ({ browser }) => {
     const free = await person(browser, "Sam");
-    await free.page.goto(`/app/rooms/${first.id}`);
+    // Nine rooms already joined today: the tenth works, the eleventh doesn't.
+    await seedRoomJoins(free.userId, 9);
+    const tenth = await createRoom(5);
+    const eleventh = await createRoom(5);
+    await free.page.goto("/app/rooms");
+    await expect(
+      free.page.getByRole("main").getByRole("note", { name: "Today's room allowance" }),
+    ).toContainText("1 of 10 room joins");
+    await free.page.goto(`/app/rooms/${tenth.id}`);
     await free.page.getByRole("button", { name: "Join room" }).click();
     await expect(free.page.getByRole("button", { name: "Leave room" })).toBeVisible();
-    await free.page.goto(`/app/rooms/${second.id}`);
+    // Rejoining the same room the same day doesn't use another join.
+    await free.page.getByRole("button", { name: "Leave room" }).click();
+    await free.page.goto(`/app/rooms/${tenth.id}`);
     await free.page.getByRole("button", { name: "Join room" }).click();
-    await expect(free.page.getByRole("main").getByRole("alert")).toContainText("one trial room");
+    await expect(free.page.getByRole("button", { name: "Leave room" })).toBeVisible();
+    await free.page.goto(`/app/rooms/${eleventh.id}`);
+    await free.page.getByRole("button", { name: "Join room" }).click();
+    await expect(free.page.getByRole("main").getByRole("alert")).toContainText("joined 10 rooms today");
 
-    // Pro member hosts a private room and shares the invite link.
-    const host = await person(browser, "Kemi", "premium");
-    await host.page.goto("/app/rooms/new");
-    await host.page.getByLabel("Room name").fill("Thesis writing club");
-    await host.page.getByRole("button", { name: "Create room" }).click();
-    await expect(host.page.getByRole("heading", { name: "Thesis writing club" })).toBeVisible();
-    await expect(host.page.getByRole("button", { name: "Copy invite link" })).toBeVisible();
-    const roomId = host.page.url().split("/").pop()!;
+    // Free members host up to 2 private rooms a day.
+    let roomId = "";
+    for (const title of ["Thesis writing club", "Evening revision"]) {
+      await free.page.goto("/app/rooms/new");
+      await free.page.getByLabel("Room name").fill(title);
+      await free.page.getByRole("button", { name: "Create room" }).click();
+      await expect(free.page.getByRole("heading", { name: title })).toBeVisible({ timeout: 15_000 });
+      roomId ||= free.page.url().split("/").pop()!;
+    }
+    await free.page.goto("/app/rooms/new");
+    await expect(free.page.getByRole("main").getByText(/created 2 rooms today/)).toBeVisible();
 
-    // The private room isn't listed for others, and can't be joined without the link.
-    await free.page.goto("/app/rooms");
-    await expect(free.page.getByRole("main").getByText("Thesis writing club")).toHaveCount(0);
-    await free.page.goto(`/app/rooms/${roomId}`);
-    await expect(free.page.getByRole("heading", { name: "This page could not be found." })).toBeVisible();
-    await archiveRoomForTest(first.id);
-    await archiveRoomForTest(second.id);
-    await archiveRoomForTest(roomId);
+    // Pro members are unlimited.
+    const pro = await person(browser, "Kemi", "premium");
+    await seedRoomJoins(pro.userId, 12);
+    await pro.page.goto(`/app/rooms/${eleventh.id}`);
+    await pro.page.getByRole("button", { name: "Join room" }).click();
+    await expect(pro.page.getByRole("button", { name: "Leave room" })).toBeVisible();
+
+    // The private room isn't listed for others, and can't be opened without the link.
+    await pro.page.goto("/app/rooms");
+    await expect(pro.page.getByRole("main").getByText("Thesis writing club")).toHaveCount(0);
+    await pro.page.goto(`/app/rooms/${roomId}`);
+    await expect(pro.page.getByRole("heading", { name: "This page could not be found." })).toBeVisible();
+    for (const r of [tenth.id, eleventh.id, roomId]) await archiveRoomForTest(r);
   });
 
   test("under-18 accounts can't join", async ({ browser }) => {

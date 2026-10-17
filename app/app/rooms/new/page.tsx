@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { GlassCard } from "@/components/ui/glass-card";
 import { isAdmin } from "@/lib/auth/admin";
 import { getSessionProfile } from "@/lib/auth/session";
-import { canHostPrivate } from "@/lib/rooms/access";
+import { roomAllowance } from "@/lib/rooms/allowance";
 import { listTracks } from "@/lib/rooms/data";
 import { createPrivateRoom } from "../actions";
 
@@ -16,10 +16,14 @@ export const metadata: Metadata = { title: "Host a room" };
 
 async function NewRoom() {
   const { user, profile } = await getSessionProfile();
-  if (!canHostPrivate(profile.plan, isAdmin(profile, user.email)))
+  const allowance = await roomAllowance(user.id, profile, isAdmin(profile, user.email));
+  if (allowance.createsLeft === 0)
     return (
       <GlassCard className="flex flex-col gap-4 p-6">
-        <p>Hosting private rooms is part of Pro.</p>
+        <p>
+          You&apos;ve created {allowance.limits.createsPerDay} rooms today, the free plan&apos;s daily limit.
+          Go Pro to create as many as you like, or come back tomorrow.
+        </p>
         <Button asChild className="w-fit">
           <Link href="/app/upgrade">See Pro</Link>
         </Button>
@@ -27,7 +31,12 @@ async function NewRoom() {
     );
   const tracks = await listTracks();
   return (
-    <GlassCard className="p-5 md:p-8">
+    <GlassCard className="flex flex-col gap-5 p-5 md:p-8">
+      {allowance.createsLeft !== null ? (
+        <p className="type-body-sm text-ink-muted">
+          Free plan: {allowance.createsLeft} of {allowance.limits.createsPerDay} rooms left to create today.
+        </p>
+      ) : null}
       <RoomForm action={createPrivateRoom} tracks={tracks} mode="private" />
     </GlassCard>
   );
